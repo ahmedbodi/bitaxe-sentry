@@ -37,7 +37,7 @@ cp .env.example .env
 nano .env  # Edit with your miner endpoints and Discord webhook
 
 # Start the services
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Configuration
