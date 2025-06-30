@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Depends, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import pathlib
 import logging
 from sqlmodel import Session, select, func
@@ -18,6 +19,29 @@ app = FastAPI(title="Bitaxe Sentry")
 # Set up templates directory
 templates_path = pathlib.Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
+
+# Set up static files directory
+static_path = pathlib.Path(__file__).parent / "static"
+static_path.mkdir(exist_ok=True)  # Create directory if it doesn't exist
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
+# Favicon routes
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    favicon_path = static_path / "favicon-32x32.png"
+    if favicon_path.exists():
+        return FileResponse(favicon_path)
+    return FileResponse(static_path / "logo.png")
+
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+@app.get("/apple-touch-icon-precomposed.png", include_in_schema=False)
+@app.get("/apple-touch-icon-120x120.png", include_in_schema=False)
+@app.get("/apple-touch-icon-120x120-precomposed.png", include_in_schema=False)
+async def apple_touch_icon():
+    icon_path = static_path / "favicon-192x192.png"
+    if icon_path.exists():
+        return FileResponse(icon_path)
+    return FileResponse(static_path / "logo.png")
 
 # Stats for dashboard
 @app.get("/")
