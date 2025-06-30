@@ -17,11 +17,7 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 
 ## Screenshots
 
-### Dashboard View
-![Dashboard View](./public/dashboard.png)
-
-### History View
-![History View](./public/history.png)
+![Dashboard View](./public/merged_image.png)
 
 ## Quick Start
 
