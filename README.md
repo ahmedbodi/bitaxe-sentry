@@ -9,7 +9,7 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 ### Features
 
 - 📊 **Metrics Tracking**: Monitors hash rate, temperature, voltage, and best difficulty
-- 🚨 **Alert System**: Discord notifications for temperature thresholds and new best difficulty records
+- 🚨 **Alert System**: Discord notifications for temperature/voltage thresholds and new best difficulty records
 - 📱 **Web Dashboard**: Web interface for real-time monitoring and history charts
 - 📊 **Mobile Friendly**: Responsive design works great on smartphones and tablets
 - 🔄 **Automatic History Cleanup**: Configurable data retention period
