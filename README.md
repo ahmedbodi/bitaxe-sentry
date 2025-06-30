@@ -36,7 +36,7 @@ cd bitaxe-sentry
 cp .env.example .env
 nano .env  # Edit with your miner endpoints and Discord webhook
 
-# Start the services
+# Start the services (use -d to run in the background)
 docker compose up -d
 ```
 
