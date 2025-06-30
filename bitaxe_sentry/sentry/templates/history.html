@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}History - Bitaxe Sentry{% endblock %}
+{% block nav_history_active %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .empty-chart-message {
+        display: flex;
+        height: 300px;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-style: italic;
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Miner History</h2>
+            <div class="form-group">
+                <select id="minerSelector" class="form-select" onchange="if(this.value==='') { window.location.href='/history'; } else { window.location.href='/history?miner_id=' + this.value; }">
+                    <option value="">All Miners</option>
+                    {% for miner in miners %}
+                    <option value="{{ miner.id }}" {% if miner.id == selected_miner %}selected{% endif %}>
+                        {{ miner.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <hr>
+    </div>
+</div>
+
+{% if not readings_by_miner %}
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">No history data available!</h4>
+    <p>There is no history data available for the selected time period or miner.</p>
+    <hr>
+    <p class="mb-0">This could be because:</p>
+    <ul>
+        <li>You haven't selected a miner</li>
+        <li>No data has been collected yet</li>
+        <li>The selected miner has no data in the last 24 hours</li>
+    </ul>
+    <p>Wait for more readings to be collected or check your configuration.</p>
+</div>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Hash Rate (MH/s)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="hashRateChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Temperature (°C)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Voltage (V)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="voltageChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Store the readings data for JavaScript -->
+<script id="readings-data" type="application/json">
+{{ readings_by_miner|tojson }}
+</script>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Get the data element with JSON contents
+    const dataElement = document.getElementById('readings-data');
+    
+    // Only proceed if we have data
+    if (dataElement) {
+        try {
+            const minerData = JSON.parse(dataElement.textContent.trim());
+            console.log("Parsed data:", minerData);
+            
+            // Check if we actually have data points
+            let hasData = false;
+            for (const minerName in minerData) {
+                if (minerData[minerName] && minerData[minerName].length > 0) {
+                    hasData = true;
+                    break;
+                }
+            }
+            
+            if (!hasData || Object.keys(minerData).length === 0) {
+                console.log("No data points found");
+                // Replace chart canvases with "No data" messages
+                document.querySelectorAll('.chart-container').forEach(container => {
+                    const canvas = container.querySelector('canvas');
+                    if (canvas) {
+                        canvas.remove();
+                        container.innerHTML = '<div class="empty-chart-message">No data points available to display</div>';
+                    }
+                });
+            } else {
+                // Function to get random color for chart lines
+                function getRandomColor() {
+                    const letters = '0123456789ABCDEF';
+                    let color = '#';
+                    for (let i = 0; i < 6; i++) {
+                        color += letters[Math.floor(Math.random() * 16)];
+                    }
+                    return color;
+                }
+            
+                // Prepare datasets for hash rate
+                const hashRateDatasets = [];
+                const temperatureDatasets = [];
+                const voltageDatasets = [];
+                
+                // First, collect all timestamps for the x-axis
+                const allTimestamps = new Set();
+                for (const minerName in minerData) {
+                    minerData[minerName].forEach(reading => {
+                        if (reading && reading.timestamp) {
+                            allTimestamps.add(reading.timestamp);
+                        }
+                    });
+                }
+                const sortedTimestamps = [...allTimestamps].sort();
+                
+                // Process data for each miner
+                for (const minerName in minerData) {
+                    const color = getRandomColor();
+                    const data = minerData[minerName];
+                    
+                    // Map readings to timestamps
+                    const readingsByTimestamp = {};
+                    data.forEach(reading => {
+                        if (reading && reading.timestamp) {
+                            readingsByTimestamp[reading.timestamp] = reading;
+                        }
+                    });
+                    
+                    const hashRateValues = [];
+                    const temperatureValues = [];
+                    const voltageValues = [];
+                    
+                    sortedTimestamps.forEach(timestamp => {
+                        const reading = readingsByTimestamp[timestamp];
+                        hashRateValues.push(reading && reading.hash_rate !== undefined ? reading.hash_rate : null);
+                        temperatureValues.push(reading && reading.temperature !== undefined ? reading.temperature : null);
+                        voltageValues.push(reading && reading.voltage !== undefined ? reading.voltage : null);
+                    });
+                    
+                    hashRateDatasets.push({
+                        label: minerName,
+                        data: hashRateValues,
+                        backgroundColor: color,
+                        borderColor: color,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    });
+                    
+                    temperatureDatasets.push({
+                        label: minerName,
+                        data: temperatureValues,
+                        backgroundColor: color,
+                        borderColor: color,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    });
+                    
+                    voltageDatasets.push({
+                        label: minerName,
+                        data: voltageValues,
+                        backgroundColor: color,
+                        borderColor: color,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    });
+                }
+                
+                // Create hash rate chart
+                try {
+                    new Chart(
+                        document.getElementById('hashRateChart'),
+                        {
+                            type: 'line',
+                            data: {
+                                labels: sortedTimestamps,
+                                datasets: hashRateDatasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        title: {
+                                            display: true,
+                                            text: 'MH/s'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} MH/s`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    );
+                } catch (e) {
+                    console.error('Error creating hash rate chart:', e);
+                    const container = document.getElementById('hashRateChart').parentElement;
+                    if (container) {
+                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
+                    }
+                }
+                
+                // Create temperature chart
+                try {
+                    new Chart(
+                        document.getElementById('tempChart'),
+                        {
+                            type: 'line',
+                            data: {
+                                labels: sortedTimestamps,
+                                datasets: temperatureDatasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: '°C'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} °C`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    );
+                } catch (e) {
+                    console.error('Error creating temperature chart:', e);
+                    const container = document.getElementById('tempChart').parentElement;
+                    if (container) {
+                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
+                    }
+                }
+                
+                // Create voltage chart
+                try {
+                    new Chart(
+                        document.getElementById('voltageChart'),
+                        {
+                            type: 'line',
+                            data: {
+                                labels: sortedTimestamps,
+                                datasets: voltageDatasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: 'V'
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} V`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    );
+                } catch (e) {
+                    console.error('Error creating voltage chart:', e);
+                    const container = document.getElementById('voltageChart').parentElement;
+                    if (container) {
+                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error parsing data:", e);
+        }
+    }
+</script>
+{% endblock %} 

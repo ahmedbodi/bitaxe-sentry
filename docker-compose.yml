@@ -1,0 +1,21 @@
+services:
+  sentry:
+    build: .
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    restart: always
+
+  web:
+    build: .
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "7070:8000"
+    command: uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - sentry 

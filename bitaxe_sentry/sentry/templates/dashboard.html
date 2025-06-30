@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Bitaxe Sentry{% endblock %}
+{% block nav_dashboard_active %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Miner Dashboard</h2>
+            <small class="text-muted">Last updated: {{ last_updated }}</small>
+        </div>
+        <hr>
+    </div>
+</div>
+
+{% if not readings %}
+<div class="alert alert-info" role="alert">
+    <h4 class="alert-heading">No miners configured!</h4>
+    <p>It looks like you don't have any miners configured yet or we haven't received any data from your miners.</p>
+    <hr>
+    <p class="mb-0">Check your .env file and make sure BITAXE_ENDPOINTS is configured correctly.</p>
+</div>
+{% endif %}
+
+<div class="row">
+    {% for item in readings %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card miner-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ item.miner.name }}</h5>
+                <span class="badge {% if item.timestamp_ago > 30 %}bg-danger{% elif item.timestamp_ago > 15 %}bg-warning{% else %}bg-success{% endif %}">
+                    {{ item.timestamp_ago }} min ago
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Hash Rate</h6>
+                            <h4>{{ "%.2f"|format(item.reading.hash_rate) }} MH/s</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Temperature</h6>
+                            <h4 class="
+                                {% if item.reading.temperature > 65 %}
+                                    temp-danger
+                                {% elif item.reading.temperature > 55 %}
+                                    temp-warning
+                                {% else %}
+                                    temp-normal
+                                {% endif %}
+                            ">
+                                {{ "%.1f"|format(item.reading.temperature) }} °C
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Voltage</h6>
+                            <h4 class="
+                                {% if item.reading.voltage < 4.8 %}
+                                    temp-danger
+                                {% elif item.reading.voltage < 5.0 %}
+                                    temp-warning
+                                {% else %}
+                                    temp-normal
+                                {% endif %}
+                            ">
+                                {{ "%.2f"|format(item.reading.voltage) }} V
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Best Difficulty</h6>
+                            <h5 class="card-text">{{ item.reading.best_diff }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-muted small">
+                <a href="/history?miner_id={{ item.miner.id }}" class="text-decoration-none">View history</a>
+                <span class="float-end">IP: {{ item.miner.endpoint }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %} 
