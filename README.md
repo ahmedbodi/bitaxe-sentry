@@ -21,6 +21,8 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 
 ## Quick Start
 
+Quickstart YouTube Tutorial can be found [here](https://www.youtube.com/watch?v=dw9u-o4kAWI)
+
 ### Run with Docker (Recommended)
 
 ```bash
