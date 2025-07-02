@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Request, Depends, Query
+from fastapi import FastAPI, Request, Depends, Query, HTTPException, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pathlib
 import logging
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, delete
 import datetime
 from typing import Optional
 from .db import get_session, Miner, Reading
@@ -149,4 +149,28 @@ def history(
             "selected_miner": selected_miner,
             "readings_by_miner": readings_by_miner
         }
-    ) 
+    )
+
+@app.delete("/api/miners/{miner_id}")
+def delete_miner(
+    miner_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Delete a miner and all its associated readings
+    """
+    # First verify miner exists
+    miner = session.get(Miner, miner_id)
+    if not miner:
+        raise HTTPException(status_code=404, detail="Miner not found")
+    
+    # Delete all readings for this miner
+    session.exec(delete(Reading).where(Reading.miner_id == miner_id))
+    
+    # Delete the miner itself
+    session.delete(miner)
+    session.commit()
+    
+    logger.info(f"Deleted miner ID {miner_id} ({miner.name}) and all associated readings")
+    
+    return {"success": True} 
