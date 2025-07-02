@@ -2,4 +2,4 @@
 Bitaxe Sentry - A monitoring system for Bitaxe miners
 """
 
-__version__ = "0.1.0" 
+from bitaxe_sentry.sentry.version import __version__ 

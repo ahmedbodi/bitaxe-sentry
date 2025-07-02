@@ -1,0 +1,74 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Get version from version.py
+        id: get_version
+        run: |
+          VERSION=$(python -c "from bitaxe_sentry.sentry.version import __version__; print(__version__)")
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          FULL_VERSION="${VERSION}-${COMMIT_HASH}"
+          echo "VERSION=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # If no previous tag, use all commits
+            CHANGELOG=$(git log --pretty=format:"* %s (%an)" | head -20)
+          else
+            # Get commits since last tag
+            CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"* %s (%an)" | head -20)
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.APP_VERSION }}
+          name: Release v${{ steps.get_version.outputs.APP_VERSION }}
+          body: |
+            ## Bitaxe Sentry Release v${{ steps.get_version.outputs.APP_VERSION }}
+            
+            ### Recent Changes
+            ${{ steps.changelog.outputs.CHANGELOG }}
+            
+            ### Update Instructions
+            1. Stop the current containers:
+               ```
+               docker compose down
+               ```
+            2. Pull the latest code:
+               ```
+               git pull
+               ```
+            3. Rebuild and start the containers:
+               ```
+               docker compose up --build -d
+               ```
+          draft: false
+          prerelease: false 
