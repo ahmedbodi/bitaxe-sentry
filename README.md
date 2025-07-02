@@ -38,6 +38,21 @@ nano .env  # Edit with your miner endpoints and Discord webhook
 docker compose up -d
 ```
 
+## Updating
+
+To update to the latest version:
+
+```bash
+# Stop the current containers
+docker compose down
+
+# Pull the latest code
+git pull
+
+# Rebuild and start the containers
+docker compose up --build -d
+```
+
 ## Configuration
 
 ### Environment Variables

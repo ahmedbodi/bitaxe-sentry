@@ -1,15 +1,16 @@
-from fastapi import FastAPI, Request, Depends, Query
+from fastapi import FastAPI, Request, Depends, Query, HTTPException, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pathlib
 import logging
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, delete
 import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 from .db import get_session, Miner, Reading
 from .config import ENDPOINTS
 from .notifier import send_startup_notification
+from .version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,12 @@ app = FastAPI(title="Bitaxe Sentry")
 # Set up templates directory
 templates_path = pathlib.Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
+
+# Helper function to add version to template context
+def get_template_context(request: Request, context: Dict[str, Any]) -> Dict[str, Any]:
+    context["request"] = request
+    context["version"] = __version__
+    return context
 
 # Set up static files directory
 static_path = pathlib.Path(__file__).parent / "static"
@@ -81,12 +88,11 @@ def dashboard(request: Request, session: Session = Depends(get_session)):
     
     return templates.TemplateResponse(
         "dashboard.html", 
-        {
-            "request": request, 
+        get_template_context(request, {
             "readings": latest_readings,
             "current_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "last_updated": last_updated
-        }
+        })
     )
 
 @app.get("/history")
@@ -143,10 +149,33 @@ def history(
     
     return templates.TemplateResponse(
         "history.html", 
-        {
-            "request": request,
+        get_template_context(request, {
             "miners": miners,
             "selected_miner": selected_miner,
             "readings_by_miner": readings_by_miner
-        }
-    ) 
+        })
+    )
+
+@app.delete("/api/miners/{miner_id}")
+def delete_miner(
+    miner_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Delete a miner and all its associated readings
+    """
+    # First verify miner exists
+    miner = session.get(Miner, miner_id)
+    if not miner:
+        raise HTTPException(status_code=404, detail="Miner not found")
+    
+    # Delete all readings for this miner
+    session.exec(delete(Reading).where(Reading.miner_id == miner_id))
+    
+    # Delete the miner itself
+    session.delete(miner)
+    session.commit()
+    
+    logger.info(f"Deleted miner ID {miner_id} ({miner.name}) and all associated readings")
+    
+    return {"success": True} 
