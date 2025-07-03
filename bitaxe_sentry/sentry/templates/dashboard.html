@@ -14,12 +14,27 @@
     </div>
 </div>
 
+{% if success_message %}
+<div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+    {{ success_message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{% if error_message %}
+<div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    {{ error_message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
 {% if not readings %}
 <div class="alert alert-info" role="alert">
     <h4 class="alert-heading">No miners configured!</h4>
     <p>It looks like you don't have any miners configured yet or we haven't received any data from your miners.</p>
     <hr>
-    <p class="mb-0">Check your .env file and make sure BITAXE_ENDPOINTS is configured correctly.</p>
+    <p class="mb-0">Check your settings and make sure miner endpoints are configured correctly.</p>
+    <a href="/settings" class="btn btn-primary mt-3">Go to Settings</a>
 </div>
 {% endif %}
 

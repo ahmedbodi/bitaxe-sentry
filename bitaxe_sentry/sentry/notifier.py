@@ -17,6 +17,8 @@ def send_startup_notification(service="main"):
         logger.warning("Discord webhook URL not configured, skipping startup notification")
         return False
         
+    logger.info(f"Sending startup notification to webhook: {DISCORD_WEBHOOK[:20]}...")
+        
     hostname = socket.gethostname()
     try:
         ip_address = socket.gethostbyname(hostname)
@@ -54,8 +56,10 @@ def send_alert(miner, reading, alert_type="temperature"):
         alert_type: Type of alert ("temperature" or "voltage")
     """
     if not DISCORD_WEBHOOK:
-        logger.warning("Discord webhook URL not configured, skipping alert")
-        return
+        logger.warning(f"Discord webhook URL not configured, skipping {alert_type} alert for {miner.name}")
+        return False
+    
+    logger.info(f"Preparing to send {alert_type} alert for {miner.name} via webhook: {DISCORD_WEBHOOK[:20]}...")
     
     if alert_type == "temperature":
         emoji = "🔥"
@@ -65,7 +69,7 @@ def send_alert(miner, reading, alert_type="temperature"):
         message = f"⚠️ **{miner.name}** voltage out of range: {reading.voltage:.2f}V"
     else:
         logger.error(f"Unknown alert type: {alert_type}")
-        return
+        return False
         
     content = (
       f"{message}\n"
@@ -80,8 +84,10 @@ def send_alert(miner, reading, alert_type="temperature"):
         )
         response.raise_for_status()
         logger.info(f"{alert_type.capitalize()} alert sent for {miner.name}")
+        return True
     except Exception as e:
         logger.error(f"Failed to send {alert_type} alert: {e}")
+        return False
 
 
 def send_voltage_alert(miner, reading):
@@ -92,7 +98,7 @@ def send_voltage_alert(miner, reading):
         miner: The miner instance
         reading: Reading instance with voltage data
     """
-    send_alert(miner, reading, alert_type="voltage")
+    return send_alert(miner, reading, alert_type="voltage")
 
 
 def send_temperature_alert(miner, reading):
@@ -103,7 +109,7 @@ def send_temperature_alert(miner, reading):
         miner: The miner instance
         reading: Reading instance with temperature data
     """
-    send_alert(miner, reading, alert_type="temperature")
+    return send_alert(miner, reading, alert_type="temperature")
 
 
 def send_diff_alert(miner, reading):
@@ -115,8 +121,10 @@ def send_diff_alert(miner, reading):
         reading: Reading instance with best_diff data
     """
     if not DISCORD_WEBHOOK:
-        logger.warning("Discord webhook URL not configured, skipping alert")
-        return
+        logger.warning(f"Discord webhook URL not configured, skipping diff alert for {miner.name}")
+        return False
+        
+    logger.info(f"Preparing to send diff alert for {miner.name} via webhook: {DISCORD_WEBHOOK[:20]}...")
         
     content = (
       f"🎉 **{miner.name}** new best diff! {reading.best_diff}\n"
@@ -131,5 +139,42 @@ def send_diff_alert(miner, reading):
         )
         response.raise_for_status()
         logger.info(f"New best diff alert sent for {miner.name}: {reading.best_diff}")
+        return True
     except Exception as e:
-        logger.error(f"Failed to send best diff alert: {e}") 
+        logger.error(f"Failed to send best diff alert: {e}")
+        return False
+
+def send_test_notification(webhook_url):
+    """
+    Send a test notification to verify webhook configuration.
+    
+    Args:
+        webhook_url: The webhook URL to test
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    if not webhook_url:
+        logger.warning("No webhook URL provided for test")
+        return False
+        
+    logger.info(f"Sending test notification to webhook: {webhook_url[:20]}...")
+        
+    content = (
+      f"🧪 **Bitaxe Sentry Test Notification**\n"
+      f"✅ This is a test message sent at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+      f"✅ Discord webhook is configured correctly!"
+    )
+    
+    try:
+        response = requests.post(
+            webhook_url, 
+            json={"content": content},
+            timeout=10
+        )
+        response.raise_for_status()
+        logger.info(f"Test notification sent successfully to webhook")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send test notification: {e}")
+        return False 

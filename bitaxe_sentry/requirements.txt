@@ -3,5 +3,5 @@ apscheduler
 sqlmodel
 fastapi
 uvicorn
-python-dotenv
-jinja2 
+jinja2
+python-multipart
