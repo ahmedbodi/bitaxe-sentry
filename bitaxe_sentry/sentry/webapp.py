@@ -1,16 +1,23 @@
-from fastapi import FastAPI, Request, Depends, Query, HTTPException, Response
+from fastapi import FastAPI, Request, Depends, Query, HTTPException, Response, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 import pathlib
 import logging
 from sqlmodel import Session, select, func, delete
 import datetime
-from typing import Optional, Dict, Any
+import os
+import signal
+import subprocess
+from typing import Optional, Dict, Any, List
+import json
+from pydantic import BaseModel
 from .db import get_session, Miner, Reading
-from .config import ENDPOINTS
-from .notifier import send_startup_notification
+from .config import ENDPOINTS, reload_config
+from .notifier import send_startup_notification, send_test_notification
 from .version import __version__
+from .settings_manager import load_settings, save_settings
+from .poller import poll_once
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +59,7 @@ async def apple_touch_icon():
 
 # Stats for dashboard
 @app.get("/")
-def dashboard(request: Request, session: Session = Depends(get_session)):
+def dashboard(request: Request, success: Optional[str] = None, error: Optional[str] = None, session: Session = Depends(get_session)):
     # Get the latest reading for each miner
     latest_readings = []
     miners = session.exec(select(Miner)).all()
@@ -91,7 +98,9 @@ def dashboard(request: Request, session: Session = Depends(get_session)):
         get_template_context(request, {
             "readings": latest_readings,
             "current_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "last_updated": last_updated
+            "last_updated": last_updated,
+            "success_message": success,
+            "error_message": error
         })
     )
 
@@ -178,4 +187,130 @@ def delete_miner(
     
     logger.info(f"Deleted miner ID {miner_id} ({miner.name}) and all associated readings")
     
-    return {"success": True} 
+    return {"success": True}
+
+@app.get("/settings")
+def settings_page(request: Request, success: Optional[str] = None, error: Optional[str] = None):
+    """Settings page to configure the application"""
+    current_settings = load_settings()
+    
+    # Convert endpoints list to string for the form
+    if isinstance(current_settings["BITAXE_ENDPOINTS"], list):
+        current_settings["BITAXE_ENDPOINTS"] = ",".join(current_settings["BITAXE_ENDPOINTS"])
+    
+    # Context for the template
+    context = {
+        "settings": current_settings,
+        "success_message": success,
+        "error_message": error
+    }
+    
+    return templates.TemplateResponse("settings.html", get_template_context(request, context))
+
+def notify_sentry_service():
+    """Send SIGHUP signal to the sentry service to reload configuration"""
+    try:
+        # Read PID from file
+        pid_file = pathlib.Path("/app/data/sentry.pid")
+        if pid_file.exists():
+            pid = int(pid_file.read_text().strip())
+            logger.info(f"Sending SIGHUP to sentry service (PID: {pid})")
+            os.kill(pid, signal.SIGHUP)
+            return True
+        else:
+            logger.warning("Sentry PID file not found, cannot send SIGHUP")
+            return False
+    except Exception as e:
+        logger.exception(f"Error sending SIGHUP to sentry service: {e}")
+        return False
+
+@app.post("/settings")
+async def save_settings_handler(request: Request):
+    """Handle settings form submission"""
+    form_data = await request.form()
+    settings_dict = dict(form_data)
+    
+    # Log the settings being saved
+    logger.info(f"Saving settings: {settings_dict}")
+    
+    # Check if endpoints have changed
+    current_settings = load_settings()
+    endpoints_changed = False
+    
+    if isinstance(current_settings["BITAXE_ENDPOINTS"], list):
+        current_endpoints = ",".join(current_settings["BITAXE_ENDPOINTS"])
+    else:
+        current_endpoints = current_settings["BITAXE_ENDPOINTS"]
+    
+    if current_endpoints != settings_dict.get("BITAXE_ENDPOINTS", ""):
+        endpoints_changed = True
+        logger.info("Endpoints have changed, will trigger immediate poll")
+    
+    # Check if voltage threshold changed
+    volt_min_changed = False
+    try:
+        current_volt_min = float(current_settings["VOLT_MIN"])
+        new_volt_min = float(settings_dict.get("VOLT_MIN", current_volt_min))
+        if current_volt_min != new_volt_min:
+            volt_min_changed = True
+            logger.info(f"Voltage threshold changed from {current_volt_min}V to {new_volt_min}V")
+    except (ValueError, TypeError):
+        pass
+    
+    # Save settings
+    success = save_settings(settings_dict)
+    
+    if success:
+        try:
+            # Reload config in the current process
+            reload_config()
+            
+            # Notify the sentry service to reload its configuration
+            notify_sentry_service()
+            
+            # Only poll immediately if endpoints have changed
+            poll_result = 0
+            if endpoints_changed:
+                poll_result = poll_once()
+                logger.info(f"Immediate poll completed, polled {poll_result} devices")
+            
+            # Provide appropriate feedback
+            if endpoints_changed:
+                if poll_result == 0:
+                    return RedirectResponse(url="/?error=No+miners+configured.+Please+check+your+settings.", status_code=303)
+                else:
+                    return RedirectResponse(url="/?success=Settings+saved+and+miners+polled+successfully.", status_code=303)
+            else:
+                return RedirectResponse(url="/?success=Settings+saved+successfully.", status_code=303)
+        except Exception as e:
+            logger.exception("Error reloading configuration")
+            return RedirectResponse(url="/settings?error=Settings+saved+but+polling+failed", status_code=303)
+    else:
+        return RedirectResponse(url="/settings?error=Failed+to+save+settings", status_code=303)
+
+class WebhookTestRequest(BaseModel):
+    webhook_url: str
+
+@app.post("/api/test-webhook")
+def test_webhook(request: WebhookTestRequest):
+    """Test the Discord webhook"""
+    try:
+        success = send_test_notification(request.webhook_url)
+        if success:
+            return {"success": True}
+        else:
+            return {"success": False, "error": "Failed to send notification"}
+    except Exception as e:
+        logger.exception("Error testing webhook")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/poll-now")
+def poll_now():
+    """Trigger an immediate poll of all devices"""
+    try:
+        # Run the polling function
+        success_count = poll_once()
+        return {"success": True, "polled_count": success_count}
+    except Exception as e:
+        logger.exception("Error triggering poll")
+        return {"success": False, "error": str(e)} 

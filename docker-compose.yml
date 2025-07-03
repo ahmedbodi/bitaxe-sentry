@@ -3,8 +3,14 @@ services:
     build: .
     volumes:
       - ./data:/app/data
-    env_file:
-      - .env
+    environment:
+      - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - TEMP_MIN=${TEMP_MIN:-20}
+      - TEMP_MAX=${TEMP_MAX:-70}
+      - VOLT_MIN=${VOLT_MIN:-5.0}
+      - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     restart: always
 
   web:
@@ -15,7 +21,13 @@ services:
       - "7070:8000"
     command: uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000
     restart: always
-    env_file:
-      - .env
+    environment:
+      - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - TEMP_MIN=${TEMP_MIN:-20}
+      - TEMP_MAX=${TEMP_MAX:-70}
+      - VOLT_MIN=${VOLT_MIN:-5.0}
+      - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     depends_on:
       - sentry 

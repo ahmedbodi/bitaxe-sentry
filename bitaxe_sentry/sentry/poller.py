@@ -2,7 +2,7 @@ import requests
 import datetime
 import logging
 from sqlmodel import Session, select
-from .config import ENDPOINTS, TEMP_MAX, TEMP_MIN, VOLT_MIN
+from .config import ENDPOINTS, TEMP_MAX, TEMP_MIN, VOLT_MIN, reload_config
 from .db import engine, Miner, Reading
 from .notifier import send_temperature_alert, send_voltage_alert, send_diff_alert
 
@@ -14,6 +14,18 @@ def poll_once():
     Send alerts if thresholds are exceeded.
     """
     logger.info("Starting polling cycle")
+    
+    # Force reload config to ensure we have the latest settings
+    reload_config()
+    
+    # Get the latest thresholds after reload
+    from .config import ENDPOINTS, TEMP_MAX, TEMP_MIN, VOLT_MIN
+    
+    # Check if there are any endpoints configured
+    if not ENDPOINTS:
+        logger.warning("No miner endpoints configured, skipping poll")
+        return 0
+        
     success_count = 0
     
     with Session(engine) as session:
@@ -35,13 +47,18 @@ def poll_once():
                 resp.raise_for_status()
                 data = resp.json()
                 
+                # Log raw voltage data for debugging
+                raw_voltage = data.get("voltage", 0.0)
+                converted_voltage = raw_voltage / 1000.0 if raw_voltage else 0.0
+                logger.info(f"Raw voltage: {raw_voltage}, Converted: {converted_voltage}V, Min threshold: {VOLT_MIN}V")
+                
                 # Create reading
                 r = Reading(
                     miner_id=miner.id,
                     hash_rate=data["hashRate"],
                     temperature=data["temp"],
                     best_diff=data["bestDiff"],
-                    voltage=data.get("voltage", 0.0) / 1000.0  # Convert from millivolts to volts
+                    voltage=converted_voltage  # Convert from millivolts to volts
                 )
                 session.add(r)
                 session.commit()
@@ -49,13 +66,19 @@ def poll_once():
                 
                 # Temperature alerts
                 if r.temperature > TEMP_MAX or r.temperature < TEMP_MIN:
-                    logger.warning(f"Temperature out of range for {miner.name}: {r.temperature}°C")
+                    logger.warning(f"Temperature out of range for {miner.name}: {r.temperature}°C (range: {TEMP_MIN}-{TEMP_MAX}°C)")
                     send_temperature_alert(miner, r)
                 
                 # Voltage alerts
                 if r.voltage < VOLT_MIN:
-                    logger.warning(f"Voltage below minimum for {miner.name}: {r.voltage}V")
-                    send_voltage_alert(miner, r)
+                    logger.warning(f"Voltage below minimum for {miner.name}: {r.voltage}V (min: {VOLT_MIN}V)")
+                    try:
+                        send_voltage_alert(miner, r)
+                        logger.info(f"Voltage alert sent for {miner.name}")
+                    except Exception as e:
+                        logger.exception(f"Failed to send voltage alert for {miner.name}: {e}")
+                else:
+                    logger.info(f"Voltage OK for {miner.name}: {r.voltage}V (min: {VOLT_MIN}V)")
                 
                 # New best diff check
                 prev_reading = session.exec(

@@ -13,15 +13,11 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 - 📱 **Web Dashboard**: Web interface for real-time monitoring and history charts
 - 📊 **Mobile Friendly**: Responsive design works great on smartphones and tablets
 - 🔄 **Automatic History Cleanup**: Configurable data retention period
-- 🐳 **Docker Support**: Easy deployment with Docker and Docker Compose
+- 🐳 **Docker Support**: Easy deployment with Docker Compose
 
 ## Screenshots
 
 ![Dashboard View](./public/merged_image.png)
-
-## Quick Start
-
-Quickstart YouTube Tutorial can be found [here](https://www.youtube.com/watch?v=dw9u-o4kAWI)
 
 ### Run with Docker (Recommended)
 
@@ -29,10 +25,6 @@ Quickstart YouTube Tutorial can be found [here](https://www.youtube.com/watch?v=
 # Clone the repository
 git clone https://github.com/zachchan105/bitaxe-sentry.git
 cd bitaxe-sentry
-
-# Create and configure your .env file
-cp .env.example .env
-nano .env  # Edit with your miner endpoints and Discord webhook
 
 # Start the services (use -d to run in the background)
 docker compose up -d
