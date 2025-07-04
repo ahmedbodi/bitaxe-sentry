@@ -18,16 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Global scheduler for access in signal handler
 scheduler = None
-
-# Check for environment variable to override data directory path
-DATA_DIR_ENV = os.environ.get("DB_PATH")
-if DATA_DIR_ENV:
-    # Use the directory of the DB_PATH environment variable
-    PID_FILE = pathlib.Path(DATA_DIR_ENV).parent / "sentry.pid"
-else:
-    # Default Docker path
-    PID_FILE = pathlib.Path("/app/data/sentry.pid")
-
+PID_FILE = pathlib.Path("/app/data/sentry.pid")
 # Track current poll interval to detect changes
 current_poll_interval = POLL_INTERVAL
 
@@ -79,9 +70,6 @@ def update_scheduler_if_needed():
 def main():
     """Main entry point for the Bitaxe Sentry application."""
     logger.info("Starting Bitaxe Sentry")
-    
-    # Ensure PID file directory exists
-    PID_FILE.parent.mkdir(parents=True, exist_ok=True)
     
     # Save PID to file for inter-service communication
     pid = os.getpid()

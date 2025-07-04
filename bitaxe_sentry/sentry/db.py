@@ -3,15 +3,9 @@ import datetime
 import pathlib
 import os
 
-# Check for environment variable to override database path
-DB_ENV_PATH = os.environ.get("DB_PATH")
-
 # Define database path relative to this file
-if DB_ENV_PATH:
-    # Use environment variable if provided
-    DB_PATH = pathlib.Path(DB_ENV_PATH)
-elif os.path.exists('/app/data'):
-    # Default Docker path
+# First check if we're in a Docker environment with /app/data
+if os.path.exists('/app/data'):
     DB_PATH = pathlib.Path('/app/data') / "bitaxe_sentry.db"
 else:
     # Check if there's a data directory at the project root
@@ -48,9 +42,6 @@ engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 def init_db():
     """Initialize the database by creating all tables."""
-    # Ensure the parent directory exists
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
     SQLModel.metadata.create_all(engine)
 
 
