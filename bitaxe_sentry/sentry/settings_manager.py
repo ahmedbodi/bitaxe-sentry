@@ -1,5 +1,6 @@
 import os
 import pathlib
+from pathlib import Path
 import logging
 import json
 import time
@@ -7,7 +8,7 @@ import time
 logger = logging.getLogger(__name__)
 
 # Define the path to the config file in the data directory
-DATA_DIR = pathlib.Path("/app/data")
+DATA_DIR = Path(os.getenv("DB_DATA_DIR", "/app/data"))  # Default to /app/data for dev
 CONFIG_FILE_PATH = DATA_DIR / "config.json"
 
 # Default settings
