@@ -12,11 +12,16 @@ COPY bitaxe_sentry /app/bitaxe_sentry
 # Set environment variables
 ENV PYTHONPATH=/app
 
-# Create volume for database
-VOLUME /app/data
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && \
+    chown -R 1000:1000 /app/data && \
+    chmod -R 755 /app/data
 
-# Set working directory for data
-WORKDIR /app/data
+# Set working directory
+WORKDIR /app
+
+# Define volume for persistent data
+VOLUME /app/data
 
 # Run the application
 CMD ["python", "-m", "bitaxe_sentry.sentry"] 
