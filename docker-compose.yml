@@ -2,7 +2,7 @@ services:
   sentry:
     build: .
     volumes:
-      - ./data:/app/data
+      - bitaxe_data:/app/data
     environment:
       - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
@@ -12,11 +12,12 @@ services:
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     restart: always
+    user: "1000:1000"
 
   web:
     build: .
     volumes:
-      - ./data:/app/data
+      - bitaxe_data:/app/data
     ports:
       - "7070:8000"
     command: uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000
@@ -30,4 +31,10 @@ services:
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     depends_on:
-      - sentry 
+      - sentry
+    user: "1000:1000"
+
+volumes:
+  bitaxe_data:
+    # This ensures the volume is created with the correct permissions
+    # Data persists between container restarts 

@@ -30,6 +30,8 @@ cd bitaxe-sentry
 docker compose up -d
 ```
 
+The application uses Docker volumes for data persistence. All data is stored in a named volume `bitaxe_data` which persists between container restarts and updates.
+
 ## Updating
 
 To update to the latest version:

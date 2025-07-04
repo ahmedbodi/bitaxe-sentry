@@ -12,16 +12,21 @@ COPY bitaxe_sentry /app/bitaxe_sentry
 # Set environment variables
 ENV PYTHONPATH=/app
 
-# Create data directory with proper permissions
-RUN mkdir -p /app/data && \
-    chown -R 1000:1000 /app/data && \
-    chmod -R 755 /app/data
+# Create non-root user and set up data directory with proper permissions
+RUN useradd -u 1000 -m appuser && \
+    mkdir -p /app/data && \
+    chown -R appuser:appuser /app/data && \
+    chmod -R 755 /app/data && \
+    chown -R appuser:appuser /app
 
 # Set working directory
 WORKDIR /app
 
 # Define volume for persistent data
 VOLUME /app/data
+
+# Switch to non-root user
+USER appuser
 
 # Run the application
 CMD ["python", "-m", "bitaxe_sentry.sentry"] 
