@@ -12,7 +12,6 @@ services:
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     restart: always
-    user: "1000:1000"
 
   web:
     build: .
@@ -20,7 +19,7 @@ services:
       - bitaxe_data:/app/data
     ports:
       - "7070:8000"
-    command: uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000
+    command: su -c "uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000" appuser
     restart: always
     environment:
       - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
@@ -32,7 +31,6 @@ services:
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     depends_on:
       - sentry
-    user: "1000:1000"
 
 volumes:
   bitaxe_data:

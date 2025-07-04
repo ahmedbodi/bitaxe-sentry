@@ -20,14 +20,18 @@ RUN useradd -u 1000 -m appuser && \
     chmod -R 755 /app/data && \
     chown -R appuser:appuser /app
 
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Set working directory
 WORKDIR /app
 
 # Define volume for persistent data
 VOLUME /app/data
 
-# Switch to non-root user
-USER appuser
+# Set entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Run the application
-CMD ["python", "-m", "bitaxe_sentry.sentry"] 
+# Run the application as appuser
+CMD ["su", "-c", "python -m bitaxe_sentry.sentry", "appuser"] 
