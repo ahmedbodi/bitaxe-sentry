@@ -14,10 +14,11 @@ ENV PYTHONPATH=/app
 
 # Create non-root user and set up data directory with proper permissions
 RUN useradd -u 1000 -m appuser && \
-    mkdir -p /app/data && \
+    mkdir -p /app/data /var/lib/bitaxe && \
     touch /app/data/bitaxe_sentry.db /app/data/config.json /app/data/sentry.pid && \
-    chown -R appuser:appuser /app/data && \
-    chmod -R 755 /app/data && \
+    touch /var/lib/bitaxe/bitaxe_sentry.db /var/lib/bitaxe/config.json /var/lib/bitaxe/sentry.pid && \
+    chown -R appuser:appuser /app/data /var/lib/bitaxe && \
+    chmod -R 755 /app/data /var/lib/bitaxe && \
     chown -R appuser:appuser /app
 
 # Copy entrypoint script
@@ -28,7 +29,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 WORKDIR /app
 
 # Define volume for persistent data
-VOLUME /app/data
+VOLUME /var/lib/bitaxe
 
 # Set entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]

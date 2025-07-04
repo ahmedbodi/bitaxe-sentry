@@ -6,8 +6,15 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# Define the path to the config file in the data directory
-DATA_DIR = pathlib.Path("/app/data")
+# Check for environment variable to override data directory path
+DATA_DIR_ENV = os.environ.get("DB_PATH")
+if DATA_DIR_ENV:
+    # Use the directory of the DB_PATH environment variable
+    DATA_DIR = pathlib.Path(DATA_DIR_ENV).parent
+else:
+    # Default Docker path
+    DATA_DIR = pathlib.Path("/app/data")
+
 CONFIG_FILE_PATH = DATA_DIR / "config.json"
 
 # Default settings

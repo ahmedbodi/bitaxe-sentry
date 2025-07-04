@@ -2,7 +2,7 @@ services:
   sentry:
     build: .
     volumes:
-      - bitaxe_data:/app/data
+      - bitaxe_data:/var/lib/bitaxe
     environment:
       - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
@@ -11,12 +11,13 @@ services:
       - VOLT_MIN=${VOLT_MIN:-5.0}
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - DB_PATH=/var/lib/bitaxe/bitaxe_sentry.db
     restart: always
 
   web:
     build: .
     volumes:
-      - bitaxe_data:/app/data
+      - bitaxe_data:/var/lib/bitaxe
     ports:
       - "7070:8000"
     command: su -c "uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000" appuser
@@ -29,6 +30,7 @@ services:
       - VOLT_MIN=${VOLT_MIN:-5.0}
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - DB_PATH=/var/lib/bitaxe/bitaxe_sentry.db
     depends_on:
       - sentry
 

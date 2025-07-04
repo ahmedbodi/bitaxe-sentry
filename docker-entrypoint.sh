@@ -3,26 +3,29 @@ set -e
 
 echo "Starting Bitaxe Sentry entrypoint script..."
 
+# Create necessary directories
+mkdir -p /var/lib/bitaxe
+
 # Create necessary files if they don't exist
-if [ ! -f /app/data/bitaxe_sentry.db ]; then
+if [ ! -f /var/lib/bitaxe/bitaxe_sentry.db ]; then
     echo "Creating empty database file..."
-    touch /app/data/bitaxe_sentry.db
+    touch /var/lib/bitaxe/bitaxe_sentry.db
 fi
 
-if [ ! -f /app/data/config.json ]; then
+if [ ! -f /var/lib/bitaxe/config.json ]; then
     echo "Creating empty config file..."
-    touch /app/data/config.json
+    touch /var/lib/bitaxe/config.json
 fi
 
-if [ ! -f /app/data/sentry.pid ]; then
+if [ ! -f /var/lib/bitaxe/sentry.pid ]; then
     echo "Creating empty PID file..."
-    touch /app/data/sentry.pid
+    touch /var/lib/bitaxe/sentry.pid
 fi
 
 # Set proper permissions
 echo "Setting permissions on data directory..."
-chmod -R 777 /app/data
-chown -R appuser:appuser /app/data
+chmod -R 777 /var/lib/bitaxe
+chown -R appuser:appuser /var/lib/bitaxe
 
 echo "Entrypoint script completed. Starting application..."
 
