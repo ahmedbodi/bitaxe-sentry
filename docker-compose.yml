@@ -2,8 +2,10 @@ services:
   sentry:
     build: .
     volumes:
-      - ./data:/app/data
+      - bitaxe_data:/var/lib/bitaxe
     environment:
+      - DB_PATH=/var/lib/bitaxe/bitaxe_sentry.db
+      - DB_DATA_DIR=/var/lib/bitaxe
       - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
       - TEMP_MIN=${TEMP_MIN:-20}
@@ -16,12 +18,14 @@ services:
   web:
     build: .
     volumes:
-      - ./data:/app/data
+      - bitaxe_data:/var/lib/bitaxe
     ports:
       - "7070:8000"
     command: uvicorn bitaxe_sentry.sentry.webapp:app --host 0.0.0.0 --port 8000
     restart: always
     environment:
+      - DB_PATH=/var/lib/bitaxe/bitaxe_sentry.db
+      - DB_DATA_DIR=/var/lib/bitaxe
       - POLL_INTERVAL_MINUTES=${POLL_INTERVAL_MINUTES:-15}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
       - TEMP_MIN=${TEMP_MIN:-20}
@@ -30,4 +34,8 @@ services:
       - BITAXE_ENDPOINTS=${BITAXE_ENDPOINTS:-}
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
     depends_on:
-      - sentry 
+      - sentry
+
+volumes:
+  bitaxe_data:
+    # Persistent named volume for storing DB and config

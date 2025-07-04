@@ -210,8 +210,9 @@ def settings_page(request: Request, success: Optional[str] = None, error: Option
 def notify_sentry_service():
     """Send SIGHUP signal to the sentry service to reload configuration"""
     try:
-        # Read PID from file
-        pid_file = pathlib.Path("/app/data/sentry.pid")
+        data_dir = pathlib.Path(os.getenv("DB_DATA_DIR", "/app/data"))
+        pid_file = data_dir / "sentry.pid"
+        
         if pid_file.exists():
             pid = int(pid_file.read_text().strip())
             logger.info(f"Sending SIGHUP to sentry service (PID: {pid})")
@@ -223,6 +224,7 @@ def notify_sentry_service():
     except Exception as e:
         logger.exception(f"Error sending SIGHUP to sentry service: {e}")
         return False
+
 
 @app.post("/settings")
 async def save_settings_handler(request: Request):

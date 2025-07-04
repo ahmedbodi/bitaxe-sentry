@@ -1,0 +1,42 @@
+name: Build Beta Images
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Get version and commit info
+        id: get_version
+        run: |
+          VERSION=$(python -c "from bitaxe_sentry.sentry.version import __version__; print(__version__)")
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +%Y%m%d%H%M)
+          BETA_VERSION="${VERSION}-beta.${TIMESTAMP}.${COMMIT_HASH}"
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "BETA_VERSION=${BETA_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            zachprice105/bitaxe-sentry:beta
+            zachprice105/bitaxe-sentry:${{ steps.get_version.outputs.BETA_VERSION }} 

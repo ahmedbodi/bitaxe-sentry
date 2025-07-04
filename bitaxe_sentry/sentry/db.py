@@ -3,19 +3,20 @@ import datetime
 import pathlib
 import os
 
-# Define database path relative to this file
-# First check if we're in a Docker environment with /app/data
-if os.path.exists('/app/data'):
-    DB_PATH = pathlib.Path('/app/data') / "bitaxe_sentry.db"
+env_path = os.getenv("DB_PATH")
+if env_path:
+    DB_PATH = pathlib.Path(env_path)
 else:
-    # Check if there's a data directory at the project root
-    project_root = pathlib.Path(__file__).parent.parent.parent
-    data_dir = project_root / "data"
-    if data_dir.exists():
-        DB_PATH = data_dir / "bitaxe_sentry.db"
+    # Otherwise fall back to best-effort local defaults
+    if os.path.exists('/app/data'):
+        DB_PATH = pathlib.Path('/app/data') / "bitaxe_sentry.db"
     else:
-        # Fallback to the package directory
-        DB_PATH = pathlib.Path(__file__).parent.parent / "bitaxe_sentry.db"
+        project_root = pathlib.Path(__file__).parent.parent.parent
+        data_dir = project_root / "data"
+        if data_dir.exists():
+            DB_PATH = data_dir / "bitaxe_sentry.db"
+        else:
+            DB_PATH = pathlib.Path(__file__).parent.parent / "bitaxe_sentry.db"
 
 
 class Miner(SQLModel, table=True):

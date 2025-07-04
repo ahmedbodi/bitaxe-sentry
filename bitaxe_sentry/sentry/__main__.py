@@ -18,8 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Global scheduler for access in signal handler
 scheduler = None
-PID_FILE = pathlib.Path("/app/data/sentry.pid")
-# Track current poll interval to detect changes
+DATA_DIR = pathlib.Path(os.getenv("DB_DATA_DIR", "/app/data"))
+PID_FILE = DATA_DIR / "sentry.pid"
+DB_PATH = pathlib.Path(os.getenv("DB_PATH", DATA_DIR / "bitaxe_sentry.db"))# Track current poll interval to detect changes
 current_poll_interval = POLL_INTERVAL
 
 def cleanup():
