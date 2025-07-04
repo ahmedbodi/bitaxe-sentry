@@ -15,6 +15,7 @@ ENV PYTHONPATH=/app
 # Create non-root user and set up data directory with proper permissions
 RUN useradd -u 1000 -m appuser && \
     mkdir -p /app/data && \
+    touch /app/data/bitaxe_sentry.db /app/data/config.json /app/data/sentry.pid && \
     chown -R appuser:appuser /app/data && \
     chmod -R 755 /app/data && \
     chown -R appuser:appuser /app
