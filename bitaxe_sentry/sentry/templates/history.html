@@ -20,6 +20,27 @@
         background-color: #f8f9fa;
         border-radius: 0.25rem;
     }
+    .chart-controls {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+    .chart-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #dee2e6;
+    }
+    .chart-options .form-check {
+        margin-right: 15px;
+    }
+    .chart-options-group {
+        display: flex;
+        align-items: center;
+    }
 </style>
 {% endblock %}
 
@@ -61,27 +82,38 @@
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Hash Rate (MH/s)</h5>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chart-container">
                     <canvas id="hashRateChart"></canvas>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Temperature (°C)</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="tempChart"></canvas>
+                <div class="chart-options">
+                    <div class="chart-options-group">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="hashRateCurved" checked onchange="toggleCurvedLines('hashRateChart', this.checked)">
+                            <label class="form-check-label" for="hashRateCurved">Curved lines</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="hashRatePoints" checked onchange="toggleDataPoints('hashRateChart', this.checked)">
+                            <label class="form-check-label" for="hashRatePoints">Show points</label>
+                        </div>
+                    </div>
+                    <div class="chart-options-group">
+                        <label class="me-2">Legend:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('hashRateChart', this.value)">
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -91,12 +123,79 @@
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Temperature (°C)</h5>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+                <div class="chart-options">
+                    <div class="chart-options-group">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="tempChartCurved" checked onchange="toggleCurvedLines('tempChart', this.checked)">
+                            <label class="form-check-label" for="tempChartCurved">Curved lines</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="tempChartPoints" checked onchange="toggleDataPoints('tempChart', this.checked)">
+                            <label class="form-check-label" for="tempChartPoints">Show points</label>
+                        </div>
+                    </div>
+                    <div class="chart-options-group">
+                        <label class="me-2">Legend:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('tempChart', this.value)">
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Voltage (V)</h5>
+                <div class="chart-controls">
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chart-container">
                     <canvas id="voltageChart"></canvas>
+                </div>
+                <div class="chart-options">
+                    <div class="chart-options-group">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="voltageChartCurved" checked onchange="toggleCurvedLines('voltageChart', this.checked)">
+                            <label class="form-check-label" for="voltageChartCurved">Curved lines</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="voltageChartPoints" checked onchange="toggleDataPoints('voltageChart', this.checked)">
+                            <label class="form-check-label" for="voltageChartPoints">Show points</label>
+                        </div>
+                    </div>
+                    <div class="chart-options-group">
+                        <label class="me-2">Legend:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('voltageChart', this.value)">
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -113,243 +212,583 @@
 
 {% block scripts %}
 <script>
-    // Get the data element with JSON contents
-    const dataElement = document.getElementById('readings-data');
+    // Global chart references
+    let hashRateChart = null;
+    let tempChart = null;
+    let voltageChart = null;
     
-    // Only proceed if we have data
-    if (dataElement) {
-        try {
-            const minerData = JSON.parse(dataElement.textContent.trim());
-            console.log("Parsed data:", minerData);
+    // Global data storage
+    let originalMinerData = null;
+    
+    // Parse timestamps to Date objects
+    function parseTimestamps(minerData) {
+        const parsedData = {};
+        
+        for (const minerName in minerData) {
+            // Just copy the data without any complex timestamp parsing
+            parsedData[minerName] = minerData[minerName];
+        }
+        
+        return parsedData;
+    }
+    
+    // Filter data by time window
+    function filterDataByTimeWindow(minerData, hoursWindow) {
+        const filteredData = {};
+        
+        console.log(`Filtering data for ${hoursWindow}h window`);
+        
+        for (const minerName in minerData) {
+            // Get all readings for this miner
+            const allReadings = minerData[minerName];
             
-            // Check if we actually have data points
-            let hasData = false;
-            for (const minerName in minerData) {
-                if (minerData[minerName] && minerData[minerName].length > 0) {
-                    hasData = true;
-                    break;
+            // Sort by timestamp
+            allReadings.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                    return a.timestamp.localeCompare(b.timestamp);
                 }
-            }
+                return 0;
+            });
             
-            if (!hasData || Object.keys(minerData).length === 0) {
-                console.log("No data points found");
-                // Replace chart canvases with "No data" messages
-                document.querySelectorAll('.chart-container').forEach(container => {
-                    const canvas = container.querySelector('canvas');
-                    if (canvas) {
-                        canvas.remove();
-                        container.innerHTML = '<div class="empty-chart-message">No data points available to display</div>';
-                    }
-                });
+            // Filter readings based on the time window
+            let filteredReadings = [];
+            
+            if (hoursWindow === 24) {
+                // For 24h, we include all readings from the last 24 hours
+                filteredReadings = allReadings;
+                console.log(`${minerName}: Using all ${allReadings.length} readings for 24h window`);
+                
+                if (allReadings.length > 0) {
+                    console.log(`  First: ${allReadings[0].timestamp}, Last: ${allReadings[allReadings.length - 1].timestamp}`);
+                }
             } else {
-                // Function to get random color for chart lines
-                function getRandomColor() {
-                    const letters = '0123456789ABCDEF';
-                    let color = '#';
-                    for (let i = 0; i < 6; i++) {
-                        color += letters[Math.floor(Math.random() * 16)];
+                // For other time windows, we need to calculate the cutoff time
+                // Get the latest timestamp
+                if (allReadings.length > 0) {
+                    const latestReading = allReadings[allReadings.length - 1];
+                    
+                    // Convert timestamps to minutes for easier comparison
+                    const getMinutesSinceMidnight = (timeStr) => {
+                        const parts = timeStr.split(':');
+                        const hours = parseInt(parts[0], 10);
+                        const minutes = parseInt(parts[1], 10);
+                        const seconds = parseInt(parts[2], 10);
+                        return hours * 60 + minutes + seconds / 60;
+                    };
+                    
+                    // Convert minutes back to timestamp for debugging
+                    const minutesToTimestamp = (minutes) => {
+                        const hours = Math.floor(minutes / 60) % 24;
+                        const mins = Math.floor(minutes % 60);
+                        const secs = Math.floor((minutes % 1) * 60);
+                        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    };
+                    
+                    const latestMinutesSinceMidnight = getMinutesSinceMidnight(latestReading.timestamp);
+                    
+                    // Calculate cutoff in minutes
+                    let cutoffMinutesSinceMidnight = latestMinutesSinceMidnight - hoursWindow * 60;
+                    
+                    // Handle day boundary
+                    if (cutoffMinutesSinceMidnight < 0) {
+                        cutoffMinutesSinceMidnight += 24 * 60; // Add a full day in minutes
                     }
-                    return color;
-                }
-            
-                // Prepare datasets for hash rate
-                const hashRateDatasets = [];
-                const temperatureDatasets = [];
-                const voltageDatasets = [];
-                
-                // First, collect all timestamps for the x-axis
-                const allTimestamps = new Set();
-                for (const minerName in minerData) {
-                    minerData[minerName].forEach(reading => {
-                        if (reading && reading.timestamp) {
-                            allTimestamps.add(reading.timestamp);
-                        }
-                    });
-                }
-                const sortedTimestamps = [...allTimestamps].sort();
-                
-                // Process data for each miner
-                for (const minerName in minerData) {
-                    const color = getRandomColor();
-                    const data = minerData[minerName];
                     
-                    // Map readings to timestamps
-                    const readingsByTimestamp = {};
-                    data.forEach(reading => {
-                        if (reading && reading.timestamp) {
-                            readingsByTimestamp[reading.timestamp] = reading;
+                    console.log(`${minerName}: ${hoursWindow}h window`);
+                    console.log(`  Latest: ${latestReading.timestamp} (${latestMinutesSinceMidnight.toFixed(2)} minutes since midnight)`);
+                    console.log(`  Cutoff: ${minutesToTimestamp(cutoffMinutesSinceMidnight)} (${cutoffMinutesSinceMidnight.toFixed(2)} minutes since midnight)`);
+                    
+                    // Filter readings
+                    filteredReadings = allReadings.filter(reading => {
+                        const readingMinutesSinceMidnight = getMinutesSinceMidnight(reading.timestamp);
+                        
+                        // If we cross midnight, we need special handling
+                        if (cutoffMinutesSinceMidnight > latestMinutesSinceMidnight) {
+                            // We're crossing midnight
+                            return readingMinutesSinceMidnight >= cutoffMinutesSinceMidnight || 
+                                   readingMinutesSinceMidnight <= latestMinutesSinceMidnight;
+                        } else {
+                            // Normal case - no midnight crossing
+                            return readingMinutesSinceMidnight >= cutoffMinutesSinceMidnight;
                         }
                     });
                     
-                    const hashRateValues = [];
-                    const temperatureValues = [];
-                    const voltageValues = [];
+                    console.log(`  Filtered from ${allReadings.length} to ${filteredReadings.length} readings`);
                     
-                    sortedTimestamps.forEach(timestamp => {
-                        const reading = readingsByTimestamp[timestamp];
-                        hashRateValues.push(reading && reading.hash_rate !== undefined ? reading.hash_rate : null);
-                        temperatureValues.push(reading && reading.temperature !== undefined ? reading.temperature : null);
-                        voltageValues.push(reading && reading.voltage !== undefined ? reading.voltage : null);
-                    });
-                    
-                    hashRateDatasets.push({
-                        label: minerName,
-                        data: hashRateValues,
-                        backgroundColor: color,
-                        borderColor: color,
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4
-                    });
-                    
-                    temperatureDatasets.push({
-                        label: minerName,
-                        data: temperatureValues,
-                        backgroundColor: color,
-                        borderColor: color,
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4
-                    });
-                    
-                    voltageDatasets.push({
-                        label: minerName,
-                        data: voltageValues,
-                        backgroundColor: color,
-                        borderColor: color,
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4
-                    });
-                }
-                
-                // Create hash rate chart
-                try {
-                    new Chart(
-                        document.getElementById('hashRateChart'),
-                        {
-                            type: 'line',
-                            data: {
-                                labels: sortedTimestamps,
-                                datasets: hashRateDatasets
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        title: {
-                                            display: true,
-                                            text: 'MH/s'
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} MH/s`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    );
-                } catch (e) {
-                    console.error('Error creating hash rate chart:', e);
-                    const container = document.getElementById('hashRateChart').parentElement;
-                    if (container) {
-                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
-                    }
-                }
-                
-                // Create temperature chart
-                try {
-                    new Chart(
-                        document.getElementById('tempChart'),
-                        {
-                            type: 'line',
-                            data: {
-                                labels: sortedTimestamps,
-                                datasets: temperatureDatasets
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        title: {
-                                            display: true,
-                                            text: '°C'
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} °C`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    );
-                } catch (e) {
-                    console.error('Error creating temperature chart:', e);
-                    const container = document.getElementById('tempChart').parentElement;
-                    if (container) {
-                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
-                    }
-                }
-                
-                // Create voltage chart
-                try {
-                    new Chart(
-                        document.getElementById('voltageChart'),
-                        {
-                            type: 'line',
-                            data: {
-                                labels: sortedTimestamps,
-                                datasets: voltageDatasets
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        title: {
-                                            display: true,
-                                            text: 'V'
-                                        }
-                                    }
-                                },
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} V`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    );
-                } catch (e) {
-                    console.error('Error creating voltage chart:', e);
-                    const container = document.getElementById('voltageChart').parentElement;
-                    if (container) {
-                        container.innerHTML = '<div class="empty-chart-message">Error creating chart: ' + e.message + '</div>';
+                    if (filteredReadings.length > 0) {
+                        console.log(`  First: ${filteredReadings[0].timestamp}, Last: ${filteredReadings[filteredReadings.length - 1].timestamp}`);
                     }
                 }
             }
-        } catch (e) {
-            console.error("Error parsing data:", e);
+            
+            filteredData[minerName] = filteredReadings;
+        }
+        
+        return filteredData;
+    }
+    
+    // Format date for display
+    function formatDateTime(timestamp) {
+        // Just return the timestamp as is, since it's already in HH:MM:SS format
+        return timestamp;
+    }
+    
+    // Update chart timeframe
+    function updateChartTimeframe(button) {
+        // Update active button state
+        const chartCard = button.closest('.card');
+        const buttons = chartCard.querySelectorAll('.chart-controls button');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Get the hours window
+        const hoursWindow = parseInt(button.getAttribute('data-hours'), 10);
+        
+        // Get the chart ID
+        const chartContainer = chartCard.querySelector('.chart-container');
+        const canvas = chartContainer.querySelector('canvas');
+        const chartId = canvas.id;
+        
+        // Update the chart
+        updateChart(chartId, hoursWindow);
+    }
+    
+    // Update a specific chart with new time window
+    function updateChart(chartId, hoursWindow) {
+        if (!originalMinerData) return;
+        
+        // Filter data for the time window
+        const filteredData = filterDataByTimeWindow(originalMinerData, hoursWindow);
+        
+        // Collect all unique timestamps from all miners
+        const allTimestamps = new Set();
+        for (const minerName in filteredData) {
+            filteredData[minerName].forEach(reading => {
+                if (reading.timestamp) {
+                    allTimestamps.add(reading.timestamp);
+                }
+            });
+        }
+        
+        // Convert to array and sort
+        const uniqueTimestamps = Array.from(allTimestamps).sort();
+        
+        // Format timestamps for display
+        const displayLabels = uniqueTimestamps.map(timestamp => formatDateTime(timestamp));
+        
+        // Prepare datasets
+        const datasets = [];
+        for (const minerName in filteredData) {
+            const color = getColorForMiner(minerName);
+            const data = filteredData[minerName];
+            
+            // Map readings to timestamps
+            const readingsByTimestamp = {};
+            data.forEach(reading => {
+                if (reading.timestamp) {
+                    readingsByTimestamp[reading.timestamp] = reading;
+                }
+            });
+            
+            // Get the appropriate data values based on chart type
+            const dataValues = [];
+            uniqueTimestamps.forEach(timestamp => {
+                const reading = readingsByTimestamp[timestamp];
+                
+                if (chartId === 'hashRateChart') {
+                    dataValues.push(reading ? reading.hash_rate : null);
+                } else if (chartId === 'tempChart') {
+                    dataValues.push(reading ? reading.temperature : null);
+                } else if (chartId === 'voltageChart') {
+                    dataValues.push(reading ? reading.voltage : null);
+                }
+            });
+            
+            // Get chart settings
+            const chartElement = document.getElementById(chartId);
+            const card = chartElement.closest('.card');
+            const curvedCheckbox = card.querySelector('input[type="checkbox"][id$="Curved"]');
+            const pointsCheckbox = card.querySelector('input[type="checkbox"][id$="Points"]');
+            
+            const tension = curvedCheckbox && curvedCheckbox.checked ? 0.4 : 0;
+            const pointRadius = pointsCheckbox && pointsCheckbox.checked ? 3 : 0;
+            
+            datasets.push({
+                label: minerName,
+                data: dataValues,
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 2,
+                fill: false,
+                tension: tension,
+                pointRadius: pointRadius,
+                pointHoverRadius: 5,
+                spanGaps: true,  // Connect lines across gaps (null values)
+                showLine: true   // Always show lines between points
+            });
+        }
+        
+        // Update the chart
+        let chart;
+        if (chartId === 'hashRateChart') {
+            chart = hashRateChart;
+        } else if (chartId === 'tempChart') {
+            chart = tempChart;
+        } else if (chartId === 'voltageChart') {
+            chart = voltageChart;
+        }
+        
+        if (chart) {
+            chart.data.labels = displayLabels;
+            chart.data.datasets = datasets;
+            chart.update({
+                duration: 300,
+                easing: 'easeOutQuad'
+            });
         }
     }
+    
+    // Toggle curved lines for a chart
+    function toggleCurvedLines(chartId, curved) {
+        const chart = getChartById(chartId);
+        if (!chart) return;
+        
+        chart.data.datasets.forEach(dataset => {
+            dataset.tension = curved ? 0.4 : 0;
+        });
+        
+        chart.update({
+            duration: 300,
+            easing: 'easeOutQuad'
+        });
+    }
+    
+    // Toggle data points for a chart
+    function toggleDataPoints(chartId, showPoints) {
+        const chart = getChartById(chartId);
+        if (!chart) return;
+        
+        chart.data.datasets.forEach(dataset => {
+            dataset.pointRadius = showPoints ? 3 : 0;
+        });
+        
+        chart.update({
+            duration: 300,
+            easing: 'easeOutQuad'
+        });
+    }
+    
+    // Change legend position for a chart
+    function changeLegendPosition(chartId, position) {
+        const chart = getChartById(chartId);
+        if (!chart) return;
+        
+        chart.options.plugins.legend.position = position;
+        chart.update({
+            duration: 300,
+            easing: 'easeOutQuad'
+        });
+    }
+    
+    // Helper to get chart by ID
+    function getChartById(chartId) {
+        if (chartId === 'hashRateChart') return hashRateChart;
+        if (chartId === 'tempChart') return tempChart;
+        if (chartId === 'voltageChart') return voltageChart;
+        return null;
+    }
+    
+    // Get a consistent color for a miner name
+    function getColorForMiner(minerName) {
+        // Predefined color palette with distinct colors
+        const colorPalette = [
+            '#4285F4', // Google Blue
+            '#EA4335', // Google Red
+            '#FBBC05', // Google Yellow
+            '#34A853', // Google Green
+            '#FF9900', // Orange
+            '#9C27B0', // Purple
+            '#00ACC1', // Cyan
+            '#FF5722', // Deep Orange
+            '#3F51B5', // Indigo
+            '#8BC34A', // Light Green
+            '#795548', // Brown
+            '#607D8B', // Blue Grey
+            '#E91E63', // Pink
+            '#673AB7', // Deep Purple
+            '#009688', // Teal
+            '#FFC107', // Amber
+            '#03A9F4', // Light Blue
+            '#CDDC39', // Lime
+            '#FF5252', // Red Accent
+            '#2196F3'  // Blue
+        ];
+        
+        // Static map to store assigned colors
+        if (!window.minerColorMap) {
+            window.minerColorMap = {};
+        }
+        
+        // If this miner already has an assigned color, return it
+        if (window.minerColorMap[minerName]) {
+            return window.minerColorMap[minerName];
+        }
+        
+        // Find all currently used colors
+        const usedColors = Object.values(window.minerColorMap);
+        
+        // Find the first unused color
+        let selectedColor = null;
+        for (const color of colorPalette) {
+            if (!usedColors.includes(color)) {
+                selectedColor = color;
+                break;
+            }
+        }
+        
+        // If all colors are used, use a hash-based approach as fallback
+        if (!selectedColor) {
+            let hash = 0;
+            for (let i = 0; i < minerName.length; i++) {
+                hash = minerName.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % colorPalette.length;
+            selectedColor = colorPalette[index];
+        }
+        
+        // Store the color for this miner
+        window.minerColorMap[minerName] = selectedColor;
+        
+        return selectedColor;
+    }
+    
+    // Initialize all charts
+    function initCharts(minerData) {
+        // Common chart options
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 500
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                tooltip: {
+                    enabled: true
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 0,
+                        autoSkip: true,
+                        maxTicksLimit: 20
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4,
+                    borderWidth: 2,
+                    fill: false
+                },
+                point: {
+                    radius: 3,
+                    hoverRadius: 5
+                }
+            }
+        };
+        
+        // Initialize Hash Rate chart
+        const hashRateCtx = document.getElementById('hashRateChart');
+        if (hashRateCtx) {
+            hashRateChart = new Chart(hashRateCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'MH/s'
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} MH/s`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize Temperature chart
+        const tempCtx = document.getElementById('tempChart');
+        if (tempCtx) {
+            tempChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            title: {
+                                display: true,
+                                text: '°C'
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} °C`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initialize Voltage chart
+        const voltageCtx = document.getElementById('voltageChart');
+        if (voltageCtx) {
+            voltageChart = new Chart(voltageCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'V'
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} V`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update all charts with 24h window initially
+        updateChart('hashRateChart', 24);
+        updateChart('tempChart', 24);
+        updateChart('voltageChart', 24);
+    }
+    
+    // Auto-refresh the charts every 60 seconds
+    function setupAutoRefresh() {
+        setInterval(() => {
+            // Get current time window from active buttons
+            const hashRateHours = parseInt(document.querySelector('#hashRateChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
+            const tempHours = parseInt(document.querySelector('#tempChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
+            const voltageHours = parseInt(document.querySelector('#voltageChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
+            
+            // Reload the data
+            fetch(window.location.href)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const dataElement = doc.getElementById('readings-data');
+                    
+                    if (dataElement) {
+                        const newMinerData = JSON.parse(dataElement.textContent.trim());
+                        originalMinerData = parseTimestamps(newMinerData);
+                        
+                        // Update charts with their current time windows
+                        updateChart('hashRateChart', hashRateHours);
+                        updateChart('tempChart', tempHours);
+                        updateChart('voltageChart', voltageHours);
+                    }
+                })
+                .catch(error => console.error('Error refreshing data:', error));
+        }, 60000); // Refresh every 60 seconds
+    }
+    
+    // Main initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the data element with JSON contents
+        const dataElement = document.getElementById('readings-data');
+        
+        // Only proceed if we have data
+        if (dataElement) {
+            try {
+                const minerData = JSON.parse(dataElement.textContent.trim());
+                console.log("Parsed data:", minerData);
+                
+                // Check if we actually have data points
+                let hasData = false;
+                for (const minerName in minerData) {
+                    if (minerData[minerName] && minerData[minerName].length > 0) {
+                        hasData = true;
+                        break;
+                    }
+                }
+                
+                if (!hasData || Object.keys(minerData).length === 0) {
+                    console.log("No data points found");
+                    // Replace chart canvases with "No data" messages
+                    document.querySelectorAll('.chart-container').forEach(container => {
+                        const canvas = container.querySelector('canvas');
+                        if (canvas) {
+                            canvas.remove();
+                            container.innerHTML = '<div class="empty-chart-message">No data points available to display</div>';
+                        }
+                    });
+                } else {
+                    // Parse timestamps and store globally
+                    originalMinerData = parseTimestamps(minerData);
+                    
+                    // Initialize charts
+                    initCharts(originalMinerData);
+                    
+                    // Setup auto-refresh
+                    setupAutoRefresh();
+                }
+            } catch (e) {
+                console.error("Error parsing data:", e);
+            }
+        }
+    });
 </script>
 {% endblock %} 
