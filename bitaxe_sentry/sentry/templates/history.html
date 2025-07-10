@@ -6,6 +6,7 @@
 {% block head_extra %}
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <style>
     .chart-container {
         position: relative;
@@ -36,12 +37,13 @@
         padding-top: 10px;
         border-top: 1px solid #dee2e6;
     }
-    .chart-options .form-check {
-        margin-right: 15px;
+    .chart-options .btn {
+        margin-right: 10px;
     }
     .chart-options-group {
         display: flex;
         align-items: center;
+        gap: 8px;
     }
 </style>
 {% endblock %}
@@ -98,14 +100,12 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="hashRateCurved" checked onchange="toggleCurvedLines('hashRateChart', this.checked)">
-                            <label class="form-check-label" for="hashRateCurved">Curved lines</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="hashRatePoints" checked onchange="toggleDataPoints('hashRateChart', this.checked)">
-                            <label class="form-check-label" for="hashRatePoints">Show points</label>
-                        </div>
+                        <button class="btn btn-sm btn-outline-secondary active" id="hashRateChartCurved" onclick="toggleCurvedLines('hashRateChart', this)">
+                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary active" id="hashRateChartPoints" onclick="toggleDataPoints('hashRateChart', this)">
+                            <i class="fas fa-circle"></i> Show Points
+                        </button>
                     </div>
                     <div class="chart-options-group">
                         <label class="me-2">Legend:</label>
@@ -139,14 +139,12 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="tempChartCurved" checked onchange="toggleCurvedLines('tempChart', this.checked)">
-                            <label class="form-check-label" for="tempChartCurved">Curved lines</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="tempChartPoints" checked onchange="toggleDataPoints('tempChart', this.checked)">
-                            <label class="form-check-label" for="tempChartPoints">Show points</label>
-                        </div>
+                        <button class="btn btn-sm btn-outline-secondary active" id="tempChartCurved" onclick="toggleCurvedLines('tempChart', this)">
+                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary active" id="tempChartPoints" onclick="toggleDataPoints('tempChart', this)">
+                            <i class="fas fa-circle"></i> Show Points
+                        </button>
                     </div>
                     <div class="chart-options-group">
                         <label class="me-2">Legend:</label>
@@ -180,14 +178,12 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="voltageChartCurved" checked onchange="toggleCurvedLines('voltageChart', this.checked)">
-                            <label class="form-check-label" for="voltageChartCurved">Curved lines</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="voltageChartPoints" checked onchange="toggleDataPoints('voltageChart', this.checked)">
-                            <label class="form-check-label" for="voltageChartPoints">Show points</label>
-                        </div>
+                        <button class="btn btn-sm btn-outline-secondary active" id="voltageChartCurved" onclick="toggleCurvedLines('voltageChart', this)">
+                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary active" id="voltageChartPoints" onclick="toggleDataPoints('voltageChart', this)">
+                            <i class="fas fa-circle"></i> Show Points
+                        </button>
                     </div>
                     <div class="chart-options-group">
                         <label class="me-2">Legend:</label>
@@ -286,6 +282,13 @@
         const chart = getChartById(chartId);
         if (!chart) return;
         
+        // Get button states
+        const curvedButton = document.getElementById(chartId + 'Curved');
+        const pointsButton = document.getElementById(chartId + 'Points');
+        
+        const useCurvedLines = curvedButton ? curvedButton.classList.contains('active') : true;
+        const showPoints = pointsButton ? pointsButton.classList.contains('active') : true;
+        
         const datasets = [];
         
         Object.entries(slice).forEach(([minerName, readings]) => {
@@ -308,8 +311,8 @@
                 borderColor: getColorForMiner(minerName),
                 borderWidth: 2,
                 fill: false,
-                tension: 0.4, // Always use curved lines by default
-                pointRadius: 3, // Always show points by default
+                tension: useCurvedLines ? 0.4 : 0, // Use button state
+                pointRadius: showPoints ? 3 : 0, // Use button state
                 pointHoverRadius: 5,
                 spanGaps: true,
                 showLine: true
@@ -327,10 +330,15 @@
     }
     
     // Toggle curved lines for a chart
-    function toggleCurvedLines(chartId, curved) {
+    function toggleCurvedLines(chartId, button) {
         const chart = getChartById(chartId);
         if (!chart) return;
         
+        // Toggle button active state
+        button.classList.toggle('active');
+        const curved = button.classList.contains('active');
+        
+        // Update chart
         chart.data.datasets.forEach(dataset => {
             dataset.tension = curved ? 0.4 : 0;
         });
@@ -342,10 +350,15 @@
     }
     
     // Toggle data points for a chart
-    function toggleDataPoints(chartId, showPoints) {
+    function toggleDataPoints(chartId, button) {
         const chart = getChartById(chartId);
         if (!chart) return;
         
+        // Toggle button active state
+        button.classList.toggle('active');
+        const showPoints = button.classList.contains('active');
+        
+        // Update chart
         chart.data.datasets.forEach(dataset => {
             dataset.pointRadius = showPoints ? 3 : 0;
         });
@@ -661,14 +674,6 @@
                 } else {
                     // Initialize charts
                     initCharts();
-                    
-                    // Make sure all checkboxes are set correctly
-                    document.querySelectorAll('input[type="checkbox"][id$="Points"]').forEach(checkbox => {
-                        checkbox.checked = true;
-                    });
-                    document.querySelectorAll('input[type="checkbox"][id$="Curved"]').forEach(checkbox => {
-                        checkbox.checked = true;
-                    });
                     
                     // Update all charts with 24h window initially
                     updateAllCharts(24);
