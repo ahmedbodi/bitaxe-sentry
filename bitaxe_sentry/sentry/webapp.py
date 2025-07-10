@@ -160,10 +160,25 @@ def history(
     # Pre-slice the data for different time windows
     windowed_data = {}
     windows = [1, 6, 24]
-    now = datetime.datetime.utcnow()
+    
+    # Find the latest timestamp across all miners
+    latest_timestamp = None
+    for miner_name, readings in readings_by_miner.items():
+        if readings:  # Make sure the miner has readings
+            # Sort readings by timestamp to ensure we get the latest one
+            sorted_readings = sorted(readings, key=lambda r: r["full_timestamp"], reverse=True)
+            miner_latest = datetime.datetime.fromisoformat(sorted_readings[0]["full_timestamp"])
+            if latest_timestamp is None or miner_latest > latest_timestamp:
+                latest_timestamp = miner_latest
+    
+    # If we don't have any readings, use current time
+    if latest_timestamp is None:
+        latest_timestamp = datetime.datetime.utcnow()
+    
+    logger.info(f"Using latest timestamp for windowing: {latest_timestamp}")
     
     for hours in windows:
-        window_cutoff = now - datetime.timedelta(hours=hours)
+        window_cutoff = latest_timestamp - datetime.timedelta(hours=hours)
         windowed_data[hours] = {}
         
         for miner_name, miner_readings in readings_by_miner.items():
@@ -171,6 +186,14 @@ def history(
                 reading for reading in miner_readings
                 if datetime.datetime.fromisoformat(reading["full_timestamp"]) > window_cutoff
             ]
+            
+            # Log the time range for debugging
+            if windowed_data[hours][miner_name]:
+                first = min(windowed_data[hours][miner_name], key=lambda r: r["full_timestamp"])
+                last = max(windowed_data[hours][miner_name], key=lambda r: r["full_timestamp"])
+                logger.info(f"Window {hours}h for {miner_name}: {first['timestamp']} to {last['timestamp']}")
+            else:
+                logger.info(f"Window {hours}h for {miner_name}: No data points")
     
     return templates.TemplateResponse(
         "history.html", 

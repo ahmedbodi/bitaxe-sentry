@@ -266,7 +266,12 @@
     
     // Update a specific chart with new time window
     function updateChart(chartId, hoursWindow) {
-        if (!windowedData || !windowedData[hoursWindow]) return;
+        if (!windowedData || !windowedData[hoursWindow]) {
+            console.error(`No data available for ${hoursWindow}h window`);
+            return;
+        }
+        
+        console.log(`Updating ${chartId} with ${hoursWindow}h window`);
         
         // Use the pre-sliced data for the selected time window
         const filteredData = windowedData[hoursWindow];
@@ -284,6 +289,11 @@
         // Convert to array and sort
         const uniqueTimestamps = Array.from(allTimestamps).sort();
         
+        console.log(`Found ${uniqueTimestamps.length} unique timestamps for ${hoursWindow}h window`);
+        if (uniqueTimestamps.length > 0) {
+            console.log(`Time range: ${uniqueTimestamps[0]} to ${uniqueTimestamps[uniqueTimestamps.length - 1]}`);
+        }
+        
         // Format timestamps for display
         const displayLabels = uniqueTimestamps.map(timestamp => formatDateTime(timestamp));
         
@@ -292,6 +302,8 @@
         for (const minerName in filteredData) {
             const color = getColorForMiner(minerName);
             const data = filteredData[minerName];
+            
+            console.log(`Processing miner ${minerName} with ${data.length} readings for ${hoursWindow}h window`);
             
             // Map readings to timestamps
             const readingsByTimestamp = {};
@@ -356,6 +368,8 @@
                 duration: 300,
                 easing: 'easeOutQuad'
             });
+            
+            console.log(`Updated ${chartId} with ${displayLabels.length} labels and ${datasets.length} datasets`);
         }
     }
     
@@ -634,6 +648,8 @@
             const tempHours = parseInt(document.querySelector('#tempChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
             const voltageHours = parseInt(document.querySelector('#voltageChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
             
+            console.log(`Auto-refreshing charts with windows: Hash Rate=${hashRateHours}h, Temp=${tempHours}h, Voltage=${voltageHours}h`);
+            
             // Reload the data
             fetch(window.location.href)
                 .then(response => response.text())
@@ -644,15 +660,24 @@
                     const windowedDataElement = doc.getElementById('windowed-data');
                     
                     if (dataElement && windowedDataElement) {
-                        const newMinerData = JSON.parse(dataElement.textContent.trim());
-                        originalMinerData = parseTimestamps(newMinerData);
-                        
-                        windowedData = JSON.parse(windowedDataElement.textContent.trim());
-                        
-                        // Update charts with their current time windows
-                        updateChart('hashRateChart', hashRateHours);
-                        updateChart('tempChart', tempHours);
-                        updateChart('voltageChart', voltageHours);
+                        try {
+                            const newMinerData = JSON.parse(dataElement.textContent.trim());
+                            originalMinerData = parseTimestamps(newMinerData);
+                            
+                            const newWindowedData = JSON.parse(windowedDataElement.textContent.trim());
+                            windowedData = newWindowedData;
+                            
+                            console.log(`Data refreshed at ${new Date().toLocaleTimeString()}`);
+                            
+                            // Update charts with their current time windows
+                            updateChart('hashRateChart', hashRateHours);
+                            updateChart('tempChart', tempHours);
+                            updateChart('voltageChart', voltageHours);
+                        } catch (e) {
+                            console.error("Error processing refreshed data:", e);
+                        }
+                    } else {
+                        console.error("Could not find data elements in refreshed page");
                     }
                 })
                 .catch(error => console.error('Error refreshing data:', error));
