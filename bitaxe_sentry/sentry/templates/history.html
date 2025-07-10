@@ -4,6 +4,8 @@
 {% block nav_history_active %}active{% endblock %}
 
 {% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
 <style>
     .chart-container {
         position: relative;
@@ -85,9 +87,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Hash Rate (MH/s)</h5>
                 <div class="chart-controls">
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
-                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateAllCharts(1)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateAllCharts(6)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateAllCharts(24)">24h</button>
                 </div>
             </div>
             <div class="card-body">
@@ -126,9 +128,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Temperature (°C)</h5>
                 <div class="chart-controls">
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
-                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateAllCharts(1)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateAllCharts(6)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateAllCharts(24)">24h</button>
                 </div>
             </div>
             <div class="card-body">
@@ -167,9 +169,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Voltage (V)</h5>
                 <div class="chart-controls">
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateChartTimeframe(this)">1h</button>
-                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateChartTimeframe(this)">6h</button>
-                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateChartTimeframe(this)">24h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateAllCharts(1)">1h</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateAllCharts(6)">6h</button>
+                    <button class="btn btn-sm btn-outline-secondary active" data-hours="24" onclick="updateAllCharts(24)">24h</button>
                 </div>
             </div>
             <div class="card-body">
@@ -223,154 +225,105 @@
     let voltageChart = null;
     
     // Global data storage
-    let originalMinerData = null;
+    let rawData = null;
     let windowedData = null;
     
-    // Parse timestamps to Date objects
-    function parseTimestamps(minerData) {
-        const parsedData = {};
-        
-        for (const minerName in minerData) {
-            // Just copy the data without any complex timestamp parsing
-            parsedData[minerName] = minerData[minerName];
-        }
-        
-        return parsedData;
+    // Helper to get chart by ID
+    function getChartById(chartId) {
+        if (chartId === 'hashRateChart') return hashRateChart;
+        if (chartId === 'tempChart') return tempChart;
+        if (chartId === 'voltageChart') return voltageChart;
+        return null;
     }
     
-    // Format date for display
-    function formatDateTime(timestamp) {
-        // Just return the timestamp as is, since it's already in HH:MM:SS format
-        return timestamp;
+    // Helper function to ensure proper timezone handling
+    function parseTimestamp(timestamp) {
+        // Just create a date object directly
+        return new Date(timestamp);
     }
     
-    // Update chart timeframe
-    function updateChartTimeframe(button) {
-        // Update active button state
-        const chartCard = button.closest('.card');
-        const buttons = chartCard.querySelectorAll('.chart-controls button');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        
-        // Get the hours window
-        const hoursWindow = parseInt(button.getAttribute('data-hours'), 10);
-        
-        // Get the chart ID
-        const chartContainer = chartCard.querySelector('.chart-container');
-        const canvas = chartContainer.querySelector('canvas');
-        const chartId = canvas.id;
-        
-        // Update the chart
-        updateChart(chartId, hoursWindow);
+    // Format time as HH:MM:SS only
+    function formatTimeOnly(date) {
+        return date.toTimeString().split(' ')[0]; // HH:MM:SS format
     }
     
-    // Update a specific chart with new time window
-    function updateChart(chartId, hoursWindow) {
-        if (!windowedData || !windowedData[hoursWindow]) {
-            console.error(`No data available for ${hoursWindow}h window`);
-            return;
-        }
+    // Update all charts with the selected time window
+    function updateAllCharts(hoursWindow) {
+        // Update active buttons for all charts
+        document.querySelectorAll('.chart-controls button').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.getAttribute('data-hours'), 10) === hoursWindow) {
+                btn.classList.add('active');
+            }
+        });
         
-        console.log(`Updating ${chartId} with ${hoursWindow}h window`);
+        // Get the data slice for this time window
+        const dataSlice = windowedData[hoursWindow];
         
-        // Use the pre-sliced data for the selected time window
-        const filteredData = windowedData[hoursWindow];
+        // Update chart titles to show the time range
+        document.querySelectorAll('.card-header h5').forEach(title => {
+            const originalTitle = title.getAttribute('data-original-title') || title.textContent;
+            if (!title.getAttribute('data-original-title')) {
+                title.setAttribute('data-original-title', originalTitle);
+            }
+            
+            // Add time window to title
+            if (hoursWindow === 1) {
+                title.textContent = `${originalTitle} (Last hour)`;
+            } else {
+                title.textContent = `${originalTitle} (Last ${hoursWindow} hours)`;
+            }
+        });
         
-        // Collect all unique timestamps from all miners
-        const allTimestamps = new Set();
-        for (const minerName in filteredData) {
-            filteredData[minerName].forEach(reading => {
-                if (reading.timestamp) {
-                    allTimestamps.add(reading.timestamp);
-                }
-            });
-        }
+        // Update each chart
+        ['hashRateChart', 'tempChart', 'voltageChart'].forEach(chartId => {
+            updateChartFromSlice(chartId, dataSlice);
+        });
+    }
+    
+    // Update a specific chart from a data slice
+    function updateChartFromSlice(chartId, slice) {
+        const chart = getChartById(chartId);
+        if (!chart) return;
         
-        // Convert to array and sort
-        const uniqueTimestamps = Array.from(allTimestamps).sort();
-        
-        console.log(`Found ${uniqueTimestamps.length} unique timestamps for ${hoursWindow}h window`);
-        if (uniqueTimestamps.length > 0) {
-            console.log(`Time range: ${uniqueTimestamps[0]} to ${uniqueTimestamps[uniqueTimestamps.length - 1]}`);
-        }
-        
-        // Format timestamps for display
-        const displayLabels = uniqueTimestamps.map(timestamp => formatDateTime(timestamp));
-        
-        // Prepare datasets
         const datasets = [];
-        for (const minerName in filteredData) {
-            const color = getColorForMiner(minerName);
-            const data = filteredData[minerName];
-            
-            console.log(`Processing miner ${minerName} with ${data.length} readings for ${hoursWindow}h window`);
-            
-            // Map readings to timestamps
-            const readingsByTimestamp = {};
-            data.forEach(reading => {
-                if (reading.timestamp) {
-                    readingsByTimestamp[reading.timestamp] = reading;
-                }
+        
+        Object.entries(slice).forEach(([minerName, readings]) => {
+            // Turn each reading into a {x:Date, y:value} point
+            const data = readings.map(r => {
+                // Store both the raw timestamp and the date object
+                return {
+                    x: new Date(r.full_timestamp),
+                    y: chartId === 'hashRateChart' ? r.hash_rate
+                       : chartId === 'tempChart' ? r.temperature
+                       : /* voltageChart */ r.voltage,
+                    rawTimestamp: r.timestamp // Store the raw timestamp for display
+                };
             });
-            
-            // Get the appropriate data values based on chart type
-            const dataValues = [];
-            uniqueTimestamps.forEach(timestamp => {
-                const reading = readingsByTimestamp[timestamp];
-                
-                if (chartId === 'hashRateChart') {
-                    dataValues.push(reading ? reading.hash_rate : null);
-                } else if (chartId === 'tempChart') {
-                    dataValues.push(reading ? reading.temperature : null);
-                } else if (chartId === 'voltageChart') {
-                    dataValues.push(reading ? reading.voltage : null);
-                }
-            });
-            
-            // Get chart settings
-            const chartElement = document.getElementById(chartId);
-            const card = chartElement.closest('.card');
-            const curvedCheckbox = card.querySelector('input[type="checkbox"][id$="Curved"]');
-            const pointsCheckbox = card.querySelector('input[type="checkbox"][id$="Points"]');
-            
-            const tension = curvedCheckbox && curvedCheckbox.checked ? 0.4 : 0;
-            const pointRadius = pointsCheckbox && pointsCheckbox.checked ? 3 : 0;
             
             datasets.push({
                 label: minerName,
-                data: dataValues,
-                backgroundColor: color,
-                borderColor: color,
+                data: data,
+                backgroundColor: getColorForMiner(minerName),
+                borderColor: getColorForMiner(minerName),
                 borderWidth: 2,
                 fill: false,
-                tension: tension,
-                pointRadius: pointRadius,
+                tension: 0.4, // Always use curved lines by default
+                pointRadius: 3, // Always show points by default
                 pointHoverRadius: 5,
-                spanGaps: true,  // Connect lines across gaps (null values)
-                showLine: true   // Always show lines between points
+                spanGaps: true,
+                showLine: true
             });
-        }
+        });
         
         // Update the chart
-        let chart;
-        if (chartId === 'hashRateChart') {
-            chart = hashRateChart;
-        } else if (chartId === 'tempChart') {
-            chart = tempChart;
-        } else if (chartId === 'voltageChart') {
-            chart = voltageChart;
-        }
+        chart.data.datasets = datasets;
+        chart.update({
+            duration: 300,
+            easing: 'easeOutQuad'
+        });
         
-        if (chart) {
-            chart.data.labels = displayLabels;
-            chart.data.datasets = datasets;
-            chart.update({
-                duration: 300,
-                easing: 'easeOutQuad'
-            });
-            
-            console.log(`Updated ${chartId} with ${displayLabels.length} labels and ${datasets.length} datasets`);
-        }
+        console.log(`Updated ${chartId} with ${datasets.length} datasets`);
     }
     
     // Toggle curved lines for a chart
@@ -413,14 +366,6 @@
             duration: 300,
             easing: 'easeOutQuad'
         });
-    }
-    
-    // Helper to get chart by ID
-    function getChartById(chartId) {
-        if (chartId === 'hashRateChart') return hashRateChart;
-        if (chartId === 'tempChart') return tempChart;
-        if (chartId === 'voltageChart') return voltageChart;
-        return null;
     }
     
     // Get a consistent color for a miner name
@@ -488,7 +433,7 @@
     }
     
     // Initialize all charts
-    function initCharts(minerData) {
+    function initCharts() {
         // Common chart options
         const commonOptions = {
             responsive: true,
@@ -502,7 +447,34 @@
             },
             plugins: {
                 tooltip: {
-                    enabled: true
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            // Format the value based on chart type
+                            let formattedValue;
+                            if (context.chart.canvas.id === 'hashRateChart') {
+                                formattedValue = context.parsed.y.toFixed(2) + ' MH/s';
+                            } else if (context.chart.canvas.id === 'tempChart') {
+                                formattedValue = context.parsed.y.toFixed(1) + ' °C';
+                            } else { // voltageChart
+                                formattedValue = context.parsed.y.toFixed(2) + ' V';
+                            }
+                            
+                            return `${context.dataset.label}: ${formattedValue}`;
+                        },
+                        title: function(context) {
+                            // Use the raw timestamp if available
+                            if (context[0] && context[0].raw && context[0].raw.rawTimestamp) {
+                                return context[0].raw.rawTimestamp;
+                            }
+                            // Fallback to formatted time
+                            if (context[0] && context[0].raw && context[0].raw.x) {
+                                const date = context[0].raw.x;
+                                return date.toTimeString().split(' ')[0]; // HH:MM:SS format
+                            }
+                            return '';
+                        }
+                    }
                 },
                 legend: {
                     position: 'top'
@@ -510,11 +482,23 @@
             },
             scales: {
                 x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'HH:mm',
+                            minute: 'HH:mm',
+                            second: 'HH:mm:ss'
+                        }
+                    },
                     ticks: {
-                        maxRotation: 45,
-                        minRotation: 0,
                         autoSkip: true,
-                        maxTicksLimit: 20
+                        maxTicksLimit: 20,
+                        callback: function(value, index, values) {
+                            // Just show the time part in HH:MM format
+                            const date = new Date(value);
+                            return date.toTimeString().split(':').slice(0, 2).join(':'); // HH:MM format
+                        }
                     }
                 }
             },
@@ -537,7 +521,6 @@
             hashRateChart = new Chart(hashRateCtx, {
                 type: 'line',
                 data: {
-                    labels: [],
                     datasets: []
                 },
                 options: {
@@ -551,16 +534,6 @@
                                 text: 'MH/s'
                             }
                         }
-                    },
-                    plugins: {
-                        ...commonOptions.plugins,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} MH/s`;
-                                }
-                            }
-                        }
                     }
                 }
             });
@@ -572,7 +545,6 @@
             tempChart = new Chart(tempCtx, {
                 type: 'line',
                 data: {
-                    labels: [],
                     datasets: []
                 },
                 options: {
@@ -583,16 +555,6 @@
                             title: {
                                 display: true,
                                 text: '°C'
-                            }
-                        }
-                    },
-                    plugins: {
-                        ...commonOptions.plugins,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} °C`;
-                                }
                             }
                         }
                     }
@@ -606,7 +568,6 @@
             voltageChart = new Chart(voltageCtx, {
                 type: 'line',
                 data: {
-                    labels: [],
                     datasets: []
                 },
                 options: {
@@ -619,36 +580,20 @@
                                 text: 'V'
                             }
                         }
-                    },
-                    plugins: {
-                        ...commonOptions.plugins,
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} V`;
-                                }
-                            }
-                        }
                     }
                 }
             });
         }
-        
-        // Update all charts with 24h window initially
-        updateChart('hashRateChart', 24);
-        updateChart('tempChart', 24);
-        updateChart('voltageChart', 24);
     }
     
     // Auto-refresh the charts every 60 seconds
     function setupAutoRefresh() {
         setInterval(() => {
             // Get current time window from active buttons
-            const hashRateHours = parseInt(document.querySelector('#hashRateChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
-            const tempHours = parseInt(document.querySelector('#tempChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
-            const voltageHours = parseInt(document.querySelector('#voltageChart').closest('.card').querySelector('.chart-controls .active').getAttribute('data-hours'), 10);
+            const activeButton = document.querySelector('.chart-controls .active');
+            const hoursWindow = activeButton ? parseInt(activeButton.getAttribute('data-hours'), 10) : 24;
             
-            console.log(`Auto-refreshing charts with windows: Hash Rate=${hashRateHours}h, Temp=${tempHours}h, Voltage=${voltageHours}h`);
+            console.log(`Auto-refreshing charts with ${hoursWindow}h window`);
             
             // Reload the data
             fetch(window.location.href)
@@ -661,18 +606,13 @@
                     
                     if (dataElement && windowedDataElement) {
                         try {
-                            const newMinerData = JSON.parse(dataElement.textContent.trim());
-                            originalMinerData = parseTimestamps(newMinerData);
-                            
-                            const newWindowedData = JSON.parse(windowedDataElement.textContent.trim());
-                            windowedData = newWindowedData;
+                            rawData = JSON.parse(dataElement.textContent.trim());
+                            windowedData = JSON.parse(windowedDataElement.textContent.trim());
                             
                             console.log(`Data refreshed at ${new Date().toLocaleTimeString()}`);
                             
-                            // Update charts with their current time windows
-                            updateChart('hashRateChart', hashRateHours);
-                            updateChart('tempChart', tempHours);
-                            updateChart('voltageChart', voltageHours);
+                            // Update all charts with current time window
+                            updateAllCharts(hoursWindow);
                         } catch (e) {
                             console.error("Error processing refreshed data:", e);
                         }
@@ -693,22 +633,22 @@
         // Only proceed if we have data
         if (dataElement && windowedDataElement) {
             try {
-                const minerData = JSON.parse(dataElement.textContent.trim());
+                rawData = JSON.parse(dataElement.textContent.trim());
                 windowedData = JSON.parse(windowedDataElement.textContent.trim());
                 
-                console.log("Parsed data:", minerData);
-                console.log("Windowed data:", windowedData);
+                console.log("Raw data loaded for miners:", Object.keys(rawData));
+                console.log("Windowed data loaded for time windows:", Object.keys(windowedData));
                 
                 // Check if we actually have data points
                 let hasData = false;
-                for (const minerName in minerData) {
-                    if (minerData[minerName] && minerData[minerName].length > 0) {
+                for (const minerName in rawData) {
+                    if (rawData[minerName] && rawData[minerName].length > 0) {
                         hasData = true;
                         break;
                     }
                 }
                 
-                if (!hasData || Object.keys(minerData).length === 0) {
+                if (!hasData || Object.keys(rawData).length === 0) {
                     console.log("No data points found");
                     // Replace chart canvases with "No data" messages
                     document.querySelectorAll('.chart-container').forEach(container => {
@@ -719,11 +659,19 @@
                         }
                     });
                 } else {
-                    // Parse timestamps and store globally
-                    originalMinerData = parseTimestamps(minerData);
-                    
                     // Initialize charts
-                    initCharts(originalMinerData);
+                    initCharts();
+                    
+                    // Make sure all checkboxes are set correctly
+                    document.querySelectorAll('input[type="checkbox"][id$="Points"]').forEach(checkbox => {
+                        checkbox.checked = true;
+                    });
+                    document.querySelectorAll('input[type="checkbox"][id$="Curved"]').forEach(checkbox => {
+                        checkbox.checked = true;
+                    });
+                    
+                    // Update all charts with 24h window initially
+                    updateAllCharts(24);
                     
                     // Setup auto-refresh
                     setupAutoRefresh();
