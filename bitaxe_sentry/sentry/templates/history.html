@@ -207,6 +207,11 @@
 {{ readings_by_miner|tojson }}
 </script>
 
+<!-- Store the windowed data for JavaScript -->
+<script id="windowed-data" type="application/json">
+{{ windowed_data|tojson }}
+</script>
+
 {% endif %}
 {% endblock %}
 
@@ -219,6 +224,7 @@
     
     // Global data storage
     let originalMinerData = null;
+    let windowedData = null;
     
     // Parse timestamps to Date objects
     function parseTimestamps(minerData) {
@@ -230,101 +236,6 @@
         }
         
         return parsedData;
-    }
-    
-    // Filter data by time window
-    function filterDataByTimeWindow(minerData, hoursWindow) {
-        const filteredData = {};
-        
-        console.log(`Filtering data for ${hoursWindow}h window`);
-        
-        for (const minerName in minerData) {
-            // Get all readings for this miner
-            const allReadings = minerData[minerName];
-            
-            // Sort by timestamp
-            allReadings.sort((a, b) => {
-                if (a.timestamp && b.timestamp) {
-                    return a.timestamp.localeCompare(b.timestamp);
-                }
-                return 0;
-            });
-            
-            // Filter readings based on the time window
-            let filteredReadings = [];
-            
-            if (hoursWindow === 24) {
-                // For 24h, we include all readings from the last 24 hours
-                filteredReadings = allReadings;
-                console.log(`${minerName}: Using all ${allReadings.length} readings for 24h window`);
-                
-                if (allReadings.length > 0) {
-                    console.log(`  First: ${allReadings[0].timestamp}, Last: ${allReadings[allReadings.length - 1].timestamp}`);
-                }
-            } else {
-                // For other time windows, we need to calculate the cutoff time
-                // Get the latest timestamp
-                if (allReadings.length > 0) {
-                    const latestReading = allReadings[allReadings.length - 1];
-                    
-                    // Convert timestamps to minutes for easier comparison
-                    const getMinutesSinceMidnight = (timeStr) => {
-                        const parts = timeStr.split(':');
-                        const hours = parseInt(parts[0], 10);
-                        const minutes = parseInt(parts[1], 10);
-                        const seconds = parseInt(parts[2], 10);
-                        return hours * 60 + minutes + seconds / 60;
-                    };
-                    
-                    // Convert minutes back to timestamp for debugging
-                    const minutesToTimestamp = (minutes) => {
-                        const hours = Math.floor(minutes / 60) % 24;
-                        const mins = Math.floor(minutes % 60);
-                        const secs = Math.floor((minutes % 1) * 60);
-                        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                    };
-                    
-                    const latestMinutesSinceMidnight = getMinutesSinceMidnight(latestReading.timestamp);
-                    
-                    // Calculate cutoff in minutes
-                    let cutoffMinutesSinceMidnight = latestMinutesSinceMidnight - hoursWindow * 60;
-                    
-                    // Handle day boundary
-                    if (cutoffMinutesSinceMidnight < 0) {
-                        cutoffMinutesSinceMidnight += 24 * 60; // Add a full day in minutes
-                    }
-                    
-                    console.log(`${minerName}: ${hoursWindow}h window`);
-                    console.log(`  Latest: ${latestReading.timestamp} (${latestMinutesSinceMidnight.toFixed(2)} minutes since midnight)`);
-                    console.log(`  Cutoff: ${minutesToTimestamp(cutoffMinutesSinceMidnight)} (${cutoffMinutesSinceMidnight.toFixed(2)} minutes since midnight)`);
-                    
-                    // Filter readings
-                    filteredReadings = allReadings.filter(reading => {
-                        const readingMinutesSinceMidnight = getMinutesSinceMidnight(reading.timestamp);
-                        
-                        // If we cross midnight, we need special handling
-                        if (cutoffMinutesSinceMidnight > latestMinutesSinceMidnight) {
-                            // We're crossing midnight
-                            return readingMinutesSinceMidnight >= cutoffMinutesSinceMidnight || 
-                                   readingMinutesSinceMidnight <= latestMinutesSinceMidnight;
-                        } else {
-                            // Normal case - no midnight crossing
-                            return readingMinutesSinceMidnight >= cutoffMinutesSinceMidnight;
-                        }
-                    });
-                    
-                    console.log(`  Filtered from ${allReadings.length} to ${filteredReadings.length} readings`);
-                    
-                    if (filteredReadings.length > 0) {
-                        console.log(`  First: ${filteredReadings[0].timestamp}, Last: ${filteredReadings[filteredReadings.length - 1].timestamp}`);
-                    }
-                }
-            }
-            
-            filteredData[minerName] = filteredReadings;
-        }
-        
-        return filteredData;
     }
     
     // Format date for display
@@ -355,10 +266,10 @@
     
     // Update a specific chart with new time window
     function updateChart(chartId, hoursWindow) {
-        if (!originalMinerData) return;
+        if (!windowedData || !windowedData[hoursWindow]) return;
         
-        // Filter data for the time window
-        const filteredData = filterDataByTimeWindow(originalMinerData, hoursWindow);
+        // Use the pre-sliced data for the selected time window
+        const filteredData = windowedData[hoursWindow];
         
         // Collect all unique timestamps from all miners
         const allTimestamps = new Set();
@@ -730,10 +641,13 @@
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
                     const dataElement = doc.getElementById('readings-data');
+                    const windowedDataElement = doc.getElementById('windowed-data');
                     
-                    if (dataElement) {
+                    if (dataElement && windowedDataElement) {
                         const newMinerData = JSON.parse(dataElement.textContent.trim());
                         originalMinerData = parseTimestamps(newMinerData);
+                        
+                        windowedData = JSON.parse(windowedDataElement.textContent.trim());
                         
                         // Update charts with their current time windows
                         updateChart('hashRateChart', hashRateHours);
@@ -747,14 +661,18 @@
     
     // Main initialization
     document.addEventListener('DOMContentLoaded', function() {
-        // Get the data element with JSON contents
+        // Get the data elements with JSON contents
         const dataElement = document.getElementById('readings-data');
+        const windowedDataElement = document.getElementById('windowed-data');
         
         // Only proceed if we have data
-        if (dataElement) {
+        if (dataElement && windowedDataElement) {
             try {
                 const minerData = JSON.parse(dataElement.textContent.trim());
+                windowedData = JSON.parse(windowedDataElement.textContent.trim());
+                
                 console.log("Parsed data:", minerData);
+                console.log("Windowed data:", windowedData);
                 
                 // Check if we actually have data points
                 let hasData = false;

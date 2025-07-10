@@ -122,7 +122,7 @@ def history(
             logger.warning(f"Invalid miner_id parameter: {miner_id}")
             selected_miner = None
     
-    # Get historical data
+    # Get historical data - get 24 hours of data
     query = select(Reading)
     if selected_miner:
         query = query.where(Reading.miner_id == selected_miner)
@@ -157,12 +157,28 @@ def history(
                 "voltage": voltage
             })
     
+    # Pre-slice the data for different time windows
+    windowed_data = {}
+    windows = [1, 6, 24]
+    now = datetime.datetime.utcnow()
+    
+    for hours in windows:
+        window_cutoff = now - datetime.timedelta(hours=hours)
+        windowed_data[hours] = {}
+        
+        for miner_name, miner_readings in readings_by_miner.items():
+            windowed_data[hours][miner_name] = [
+                reading for reading in miner_readings
+                if datetime.datetime.fromisoformat(reading["full_timestamp"]) > window_cutoff
+            ]
+    
     return templates.TemplateResponse(
         "history.html", 
         get_template_context(request, {
             "miners": miners,
             "selected_miner": selected_miner,
-            "readings_by_miner": readings_by_miner
+            "readings_by_miner": readings_by_miner,
+            "windowed_data": windowed_data
         })
     )
 
