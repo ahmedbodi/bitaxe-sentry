@@ -1,6 +1,6 @@
 import requests
 import logging
-from .config import DISCORD_WEBHOOK
+from .config import DISCORD_WEBHOOK, reload_config
 import socket
 import datetime
 
@@ -13,6 +13,10 @@ def send_startup_notification(service="main"):
     Args:
         service: The service that's starting ('main' or 'web')
     """
+    # Reload config to ensure we have the latest webhook URL
+    reload_config()
+    from .config import DISCORD_WEBHOOK
+    
     if not DISCORD_WEBHOOK:
         logger.warning("Discord webhook URL not configured, skipping startup notification")
         return False
@@ -55,6 +59,10 @@ def send_alert(miner, reading, alert_type="temperature"):
         reading: Reading instance with temperature/voltage data
         alert_type: Type of alert ("temperature" or "voltage")
     """
+    # Reload config to ensure we have the latest webhook URL
+    reload_config()
+    from .config import DISCORD_WEBHOOK
+    
     if not DISCORD_WEBHOOK:
         logger.warning(f"Discord webhook URL not configured, skipping {alert_type} alert for {miner.name}")
         return False
@@ -120,6 +128,10 @@ def send_diff_alert(miner, reading):
         miner: The miner instance
         reading: Reading instance with best_diff data
     """
+    # Reload config to ensure we have the latest webhook URL
+    reload_config()
+    from .config import DISCORD_WEBHOOK
+    
     if not DISCORD_WEBHOOK:
         logger.warning(f"Discord webhook URL not configured, skipping diff alert for {miner.name}")
         return False
@@ -154,6 +166,9 @@ def send_test_notification(webhook_url):
     Returns:
         bool: True if successful, False otherwise
     """
+    # For test notifications, we use the provided webhook URL directly
+    # No need to reload config since the URL is passed as a parameter
+    
     if not webhook_url:
         logger.warning("No webhook URL provided for test")
         return False
@@ -177,4 +192,61 @@ def send_test_notification(webhook_url):
         return True
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")
+        return False
+
+def send_miner_offline_alert(miner):
+    """
+    Send an alert when a miner fails to respond to polling.
+    
+    Args:
+        miner: The miner instance that failed to respond
+        
+    Returns:
+        bool: True if notification was sent successfully, False otherwise
+    """
+    # Reload config to ensure we have the latest webhook URL
+    reload_config()
+    from .config import DISCORD_WEBHOOK
+    
+    if not DISCORD_WEBHOOK:
+        logger.warning(f"Discord webhook URL not configured, skipping offline alert for {miner.name}")
+        return False
+        
+    logger.info(f"Preparing to send offline alert for {miner.name} via webhook: {DISCORD_WEBHOOK[:20]}...")
+    
+    # Get the last reading time if available
+    last_reading_time = "Unknown"
+    try:
+        from sqlmodel import select
+        from .db import get_session, Reading
+        
+        with get_session() as session:
+            last_reading = session.exec(
+                select(Reading)
+                .where(Reading.miner_id == miner.id)
+                .order_by(Reading.timestamp.desc())
+                .limit(1)
+            ).first()
+            
+            if last_reading:
+                last_reading_time = last_reading.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    except Exception as e:
+        logger.error(f"Failed to get last reading time for offline miner: {e}")
+    
+    content = (
+      f"🔴 **{miner.name}** is **OFFLINE**\n"
+      f"Failed to respond to latest polling event"
+    )
+    
+    try:
+        response = requests.post(
+            DISCORD_WEBHOOK, 
+            json={"content": content},
+            timeout=10
+        )
+        response.raise_for_status()
+        logger.info(f"Offline alert sent for {miner.name}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send offline alert: {e}")
         return False 
