@@ -38,12 +38,44 @@
         border-top: 1px solid #dee2e6;
     }
     .chart-options .btn {
-        margin-right: 10px;
+        margin-right: 5px;
     }
     .chart-options-group {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 5px;
+    }
+    .chart-options-group:last-child {
+        margin-left: auto;
+    }
+    .chart-toggle-btn {
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+    }
+    .chart-toggle-btn.active {
+        background-color: #e9ecef;
+        border-color: #ced4da;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+    }
+    /* Mobile optimizations */
+    @media (max-width: 767.98px) {
+        .chart-options {
+            justify-content: space-between;
+            flex-wrap: nowrap;
+        }
+        .chart-toggle-btn {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.75rem;
+        }
+        .chart-options .dropdown-menu {
+            min-width: 6rem;
+        }
+        .chart-options-group {
+            gap: 2px;
+        }
+        .chart-options-group:last-child {
+            margin-left: 5px;
+        }
     }
 </style>
 {% endblock %}
@@ -100,21 +132,25 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <button class="btn btn-sm btn-outline-secondary active" id="hashRateChartCurved" onclick="toggleCurvedLines('hashRateChart', this)">
-                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="hashRateChartCurved" onclick="toggleCurvedLines('hashRateChart', this)" title="Toggle Curved Lines">
+                            <i class="fas fa-bezier-curve"></i><span class="d-none d-md-inline"> Curved</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary active" id="hashRateChartPoints" onclick="toggleDataPoints('hashRateChart', this)">
-                            <i class="fas fa-circle"></i> Show Points
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="hashRateChartPoints" onclick="toggleDataPoints('hashRateChart', this)" title="Toggle Data Points">
+                            <i class="fas fa-circle"></i><span class="d-none d-md-inline"> Points</span>
                         </button>
                     </div>
                     <div class="chart-options-group">
-                        <label class="me-2">Legend:</label>
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('hashRateChart', this.value)">
-                            <option value="top">Top</option>
-                            <option value="bottom">Bottom</option>
-                            <option value="left">Left</option>
-                            <option value="right">Right</option>
-                        </select>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="hashRateLegendDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Legend Position">
+                                <i class="fas fa-list"></i><span class="d-none d-md-inline"> Legend</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="hashRateLegendDropdown">
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('hashRateChart', 'top'); return false;">Top</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('hashRateChart', 'bottom'); return false;">Bottom</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('hashRateChart', 'left'); return false;">Left</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('hashRateChart', 'right'); return false;">Right</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -139,21 +175,25 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <button class="btn btn-sm btn-outline-secondary active" id="tempChartCurved" onclick="toggleCurvedLines('tempChart', this)">
-                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="tempChartCurved" onclick="toggleCurvedLines('tempChart', this)" title="Toggle Curved Lines">
+                            <i class="fas fa-bezier-curve"></i><span class="d-none d-md-inline"> Curved</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary active" id="tempChartPoints" onclick="toggleDataPoints('tempChart', this)">
-                            <i class="fas fa-circle"></i> Show Points
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="tempChartPoints" onclick="toggleDataPoints('tempChart', this)" title="Toggle Data Points">
+                            <i class="fas fa-circle"></i><span class="d-none d-md-inline"> Points</span>
                         </button>
                     </div>
                     <div class="chart-options-group">
-                        <label class="me-2">Legend:</label>
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('tempChart', this.value)">
-                            <option value="top">Top</option>
-                            <option value="bottom">Bottom</option>
-                            <option value="left">Left</option>
-                            <option value="right">Right</option>
-                        </select>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="tempLegendDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Legend Position">
+                                <i class="fas fa-list"></i><span class="d-none d-md-inline"> Legend</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="tempLegendDropdown">
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('tempChart', 'top'); return false;">Top</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('tempChart', 'bottom'); return false;">Bottom</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('tempChart', 'left'); return false;">Left</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('tempChart', 'right'); return false;">Right</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -178,21 +218,25 @@
                 </div>
                 <div class="chart-options">
                     <div class="chart-options-group">
-                        <button class="btn btn-sm btn-outline-secondary active" id="voltageChartCurved" onclick="toggleCurvedLines('voltageChart', this)">
-                            <i class="fas fa-bezier-curve"></i> Curved Lines
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="voltageChartCurved" onclick="toggleCurvedLines('voltageChart', this)" title="Toggle Curved Lines">
+                            <i class="fas fa-bezier-curve"></i><span class="d-none d-md-inline"> Curved</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary active" id="voltageChartPoints" onclick="toggleDataPoints('voltageChart', this)">
-                            <i class="fas fa-circle"></i> Show Points
+                        <button class="btn btn-sm btn-light chart-toggle-btn active" id="voltageChartPoints" onclick="toggleDataPoints('voltageChart', this)" title="Toggle Data Points">
+                            <i class="fas fa-circle"></i><span class="d-none d-md-inline"> Points</span>
                         </button>
                     </div>
                     <div class="chart-options-group">
-                        <label class="me-2">Legend:</label>
-                        <select class="form-select form-select-sm" style="width: auto;" onchange="changeLegendPosition('voltageChart', this.value)">
-                            <option value="top">Top</option>
-                            <option value="bottom">Bottom</option>
-                            <option value="left">Left</option>
-                            <option value="right">Right</option>
-                        </select>
+                        <div class="dropdown d-inline-block">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="voltageLegendDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Legend Position">
+                                <i class="fas fa-list"></i><span class="d-none d-md-inline"> Legend</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="voltageLegendDropdown">
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('voltageChart', 'top'); return false;">Top</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('voltageChart', 'bottom'); return false;">Bottom</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('voltageChart', 'left'); return false;">Left</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLegendPosition('voltageChart', 'right'); return false;">Right</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>

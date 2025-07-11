@@ -4,7 +4,7 @@ import logging
 from sqlmodel import Session, select
 from .config import ENDPOINTS, TEMP_MAX, TEMP_MIN, VOLT_MIN, reload_config
 from .db import engine, Miner, Reading
-from .notifier import send_temperature_alert, send_voltage_alert, send_diff_alert
+from .notifier import send_temperature_alert, send_voltage_alert, send_diff_alert, send_miner_offline_alert
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,15 @@ def poll_once():
                     
             except requests.exceptions.RequestException as e:
                 logger.error(f"Failed to poll miner at {endpoint_url}: {e}")
+                
+                # Send offline alert when miner fails to respond
+                if miner:
+                    logger.warning(f"Miner {miner.name} appears to be offline, sending alert")
+                    try:
+                        send_miner_offline_alert(miner)
+                    except Exception as alert_error:
+                        logger.exception(f"Failed to send offline alert for {miner.name}: {alert_error}")
+                        
             except Exception as e:
                 logger.exception(f"Error processing miner at {endpoint_url}: {e}")
     
