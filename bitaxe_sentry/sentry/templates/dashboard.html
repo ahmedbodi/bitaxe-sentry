@@ -43,7 +43,12 @@
     <div class="col-md-6 col-lg-4">
         <div class="card miner-card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">{{ item.miner.name }}</h5>
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="mb-0">{{ item.miner.name }}</h5>
+                    <a href="#" class="text-secondary rename-miner" data-miner-id="{{ item.miner.id }}" data-miner-name="{{ item.miner.name }}" title="Rename miner">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                </div>
                 <div>
                     <span class="badge {% if item.timestamp_ago > 30 %}bg-danger{% elif item.timestamp_ago > 15 %}bg-warning{% else %}bg-success{% endif %} me-2">
                         {{ item.timestamp_ago }} min ago
@@ -57,8 +62,11 @@
                 <div class="row">
                     <div class="col-6">
                         <div class="mb-3">
-                            <h6 class="text-muted mb-1">Hash Rate</h6>
-                            <h4>{{ "%.2f"|format(item.reading.hash_rate) }} MH/s</h4>
+                            <h6 class="text-muted mb-1 hashrate-label toggle-unit" title="Toggle units (MH/s ↔ TH/s)">Hash Rate</h6>
+                            <h4>
+                                <span class="hashrate-value toggle-unit" data-hashrate-mh="{{ "%.6f"|format(item.reading.hash_rate) }}"></span>
+                                <span class="hashrate-unit toggle-unit"></span>
+                            </h4>
                         </div>
                     </div>
                     <div class="col-6">
@@ -106,7 +114,7 @@
             </div>
             <div class="card-footer text-muted small">
                 <a href="/history?miner_id={{ item.miner.id }}" class="text-decoration-none">View history</a>
-                <span class="float-end">IP: {{ item.miner.endpoint }}</span>
+                <span class="float-end">IP: <a href="{{ item.miner.endpoint }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ item.miner.endpoint }}</a></span>
             </div>
         </div>
     </div>
@@ -132,12 +140,34 @@
         </div>
     </div>
 </div>
+
+<!-- Rename Miner Modal -->
+<div class="modal fade" id="renameMinerModal" tabindex="-1" aria-labelledby="renameMinerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameMinerModalLabel">Rename Miner</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newMinerNameInput" class="form-label">New name</label>
+                    <input type="text" class="form-control" id="newMinerNameInput" maxlength="64" placeholder="Enter a display name">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmRenameBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Set up delete miner functionality
+        // Delete miner
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         let minerIdToDelete;
         
@@ -153,12 +183,10 @@
         
         document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
             if (minerIdToDelete) {
-                // Send DELETE request to the server
-                fetch(`/api/miners/${minerIdToDelete}`, {
-                    method: 'DELETE',
-                }).then(response => {
+                fetch(`/api/miners/${minerIdToDelete}`, { method: 'DELETE' })
+                .then(response => {
                     if (response.ok) {
-                        window.location.reload(); // Reload page to reflect changes
+                        window.location.reload();
                     } else {
                         alert('Failed to delete miner. Please try again.');
                     }
@@ -169,6 +197,84 @@
                     deleteModal.hide();
                 });
             }
+        });
+
+        // Rename miner
+        const renameModal = new bootstrap.Modal(document.getElementById('renameMinerModal'));
+        let minerIdToRename;
+        const nameInput = document.getElementById('newMinerNameInput');
+
+        document.querySelectorAll('.rename-miner').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                minerIdToRename = this.getAttribute('data-miner-id');
+                const currentName = this.getAttribute('data-miner-name') || '';
+                nameInput.value = currentName;
+                nameInput.focus();
+                renameModal.show();
+            });
+        });
+
+        document.getElementById('confirmRenameBtn').addEventListener('click', function() {
+            const newName = (nameInput.value || '').trim();
+            if (!newName) {
+                alert('Please enter a name.');
+                return;
+            }
+            fetch(`/api/miners/${minerIdToRename}/rename`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            }).then(response => response.json())
+            .then(result => {
+                if (result && result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result && result.detail ? result.detail : 'Failed to rename miner.');
+                }
+            }).catch(error => {
+                console.error('Error renaming miner:', error);
+                alert('An error occurred while renaming the miner.');
+            }).finally(() => {
+                renameModal.hide();
+            });
+        });
+
+        const UNIT_KEY = 'hashrate_unit'; // shared with history
+        function getUnit() {
+            try { return localStorage.getItem(UNIT_KEY) || 'MH'; } catch (e) { return 'MH'; }
+        }
+        function setUnit(u) {
+            try { localStorage.setItem(UNIT_KEY, u); } catch (e) {}
+            renderAllHashrates();
+        }
+        function convertToDisplay(mh) {
+            const unit = getUnit();
+            if (unit === 'TH') return { value: (mh / 1000.0), unit: 'TH/s' };
+            return { value: mh, unit: 'MH/s' };
+        }
+        function renderAllHashrates() {
+            const unit = getUnit();
+            document.querySelectorAll('.hashrate-value').forEach(span => {
+                const mh = parseFloat(span.getAttribute('data-hashrate-mh') || '0');
+                const { value, unit } = convertToDisplay(mh);
+                span.textContent = value.toFixed(2);
+                const unitSpan = span.parentElement.querySelector('.hashrate-unit');
+                if (unitSpan) unitSpan.textContent = ' ' + unit;
+            });
+        }
+        function toggleUnit() {
+            const current = getUnit();
+            setUnit(current === 'MH' ? 'TH' : 'MH');
+        }
+
+        // Initial render
+        renderAllHashrates();
+
+        // Click handlers on labels and values
+        document.querySelectorAll('.toggle-unit').forEach(el => {
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', toggleUnit);
         });
     });
 </script>

@@ -77,25 +77,54 @@
             margin-left: 5px;
         }
     }
+    /* Dark theme refinements for history controls */
+    [data-theme="dark"] .chart-options .btn-light,
+    [data-theme="dark"] .chart-options .btn-light:hover,
+    [data-theme="dark"] .chart-options .btn-light:focus {
+        background-color: #2a2a2a;
+        color: #e9ecef;
+        border-color: #3a3a3a;
+    }
+    [data-theme="dark"] .chart-toggle-btn.active {
+        background-color: #343a40;
+        border-color: #3a3a3a;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+    }
+    [data-theme="dark"] .dropdown-toggle.btn-light {
+        background-color: #2a2a2a;
+        color: #e9ecef;
+        border-color: #3a3a3a;
+    }
+    [data-theme="dark"] .form-select {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        border-color: var(--border-color);
+    }
+    [data-theme="dark"] .form-select:focus {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        border-color: #495057;
+        box-shadow: 0 0 0 0.2rem rgba(173, 181, 189, 0.15);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2>Miner History</h2>
-            <div class="form-group">
-                <select id="minerSelector" class="form-select" onchange="if(this.value==='') { window.location.href='/history'; } else { window.location.href='/history?miner_id=' + this.value; }">
-                    <option value="">All Miners</option>
-                    {% for miner in miners %}
-                    <option value="{{ miner.id }}" {% if miner.id == selected_miner %}selected{% endif %}>
-                        {{ miner.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+                    <div class="d-flex justify-content-between align-items-center">
+                <h2>Miner History</h2>
+                <div class="form-group">
+                    <select id="minerSelector" class="form-select" onchange="if(this.value==='') { window.location.href='/history'; } else { window.location.href='/history?miner_id=' + this.value; }">
+                        <option value="">All Miners</option>
+                        {% for miner in miners %}
+                        <option value="{{ miner.id }}" {% if miner.id == selected_miner %}selected{% endif %}>
+                            {{ miner.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </div>
         <hr>
     </div>
 </div>
@@ -119,7 +148,7 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5>Hash Rate (MH/s)</h5>
+                <h5 id="hashRateTitle">Hash Rate</h5>
                 <div class="chart-controls">
                     <button class="btn btn-sm btn-outline-secondary" data-hours="1" onclick="updateAllCharts(1)">1h</button>
                     <button class="btn btn-sm btn-outline-secondary" data-hours="6" onclick="updateAllCharts(6)">6h</button>
@@ -140,6 +169,10 @@
                         </button>
                     </div>
                     <div class="chart-options-group">
+                        <div class="btn-group me-2" role="group" aria-label="Units">
+                            <button type="button" id="unitMh" class="btn btn-light btn-sm">MH/s</button>
+                            <button type="button" id="unitTh" class="btn btn-light btn-sm">TH/s</button>
+                        </div>
                         <div class="dropdown d-inline-block">
                             <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="hashRateLegendDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Legend Position">
                                 <i class="fas fa-list"></i><span class="d-none d-md-inline"> Legend</span>
@@ -341,9 +374,9 @@
                 // Store both the raw timestamp and the date object
                 return {
                     x: new Date(r.full_timestamp),
-                    y: chartId === 'hashRateChart' ? r.hash_rate
-                       : chartId === 'tempChart' ? r.temperature
-                       : /* voltageChart */ r.voltage,
+                                         y: chartId === 'hashRateChart' ? convertHashrate(r.hash_rate)
+                        : chartId === 'tempChart' ? r.temperature
+                        : /* voltageChart */ r.voltage,
                     rawTimestamp: r.timestamp // Store the raw timestamp for display
                 };
             });
@@ -510,7 +543,8 @@
                             // Format the value based on chart type
                             let formattedValue;
                             if (context.chart.canvas.id === 'hashRateChart') {
-                                formattedValue = context.parsed.y.toFixed(2) + ' MH/s';
+                                                                 const unit = getCurrentUnit();
+                                formattedValue = context.parsed.y.toFixed(2) + ' ' + (unit === 'TH' ? 'TH/s' : 'MH/s');
                             } else if (context.chart.canvas.id === 'tempChart') {
                                 formattedValue = context.parsed.y.toFixed(1) + ' °C';
                             } else { // voltageChart
@@ -588,7 +622,7 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'MH/s'
+                                text: getHashrateUnitLabel()
                             }
                         }
                     }
@@ -681,6 +715,108 @@
         }, 60000); // Refresh every 60 seconds
     }
     
+    // Apply theme to charts
+    function applyChartTheme(isDark) {
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        const tickColor = isDark ? '#e9ecef' : '#212529';
+        const charts = [hashRateChart, tempChart, voltageChart];
+        charts.forEach(c => {
+            if (!c) return;
+            if (c.options.scales && c.options.scales.x) {
+                c.options.scales.x.grid = c.options.scales.x.grid || {};
+                c.options.scales.x.ticks = c.options.scales.x.ticks || {};
+                c.options.scales.x.grid.color = gridColor;
+                c.options.scales.x.ticks.color = tickColor;
+            }
+            if (c.options.scales && c.options.scales.y) {
+                c.options.scales.y.grid = c.options.scales.y.grid || {};
+                c.options.scales.y.ticks = c.options.scales.y.ticks || {};
+                c.options.scales.y.grid.color = gridColor;
+                c.options.scales.y.ticks.color = tickColor;
+            }
+            if (c.options.plugins && c.options.plugins.legend && c.options.plugins.legend.labels) {
+                c.options.plugins.legend.labels.color = tickColor;
+            }
+            c.update('none');
+        });
+    }
+
+    // Listen for theme changes
+    window.addEventListener('themechange', (e) => {
+        if (e && e.detail) applyChartTheme(!!e.detail.isDark);
+    });
+
+    // Units handling for hash rate
+    const unitStorageKey = 'hashrate_unit';
+    function getCurrentUnit() {
+        try { return localStorage.getItem(unitStorageKey) || 'MH'; } catch(e) { return 'MH'; }
+    }
+    function setCurrentUnit(unit) {
+        try { localStorage.setItem(unitStorageKey, unit); } catch(e) {}
+        updateUnitButtons();
+        // Re-render datasets with new unit
+        const activeButton = document.querySelector('.chart-controls .active');
+        const hoursWindow = activeButton ? parseInt(activeButton.getAttribute('data-hours'), 10) : 24;
+        updateAllCharts(hoursWindow);
+    }
+    function updateUnitButtons() {
+        const unit = getCurrentUnit();
+        const mhBtn = document.getElementById('unitMh');
+        const thBtn = document.getElementById('unitTh');
+        if (mhBtn && thBtn) {
+            if (unit === 'TH') {
+                thBtn.classList.add('active');
+                mhBtn.classList.remove('active');
+            } else {
+                mhBtn.classList.add('active');
+                thBtn.classList.remove('active');
+            }
+        }
+    }
+
+    function convertHashrate(value) {
+        const unit = getCurrentUnit();
+        if (unit === 'TH') {
+            return value / 1000.0; // MH/s -> TH/s
+        }
+        return value; // default MH/s
+    }
+
+    function getHashrateUnitLabel() {
+        return getCurrentUnit() === 'TH' ? 'TH/s' : 'MH/s';
+    }
+
+    function updateHashrateAxisUnit() {
+        if (hashRateChart && hashRateChart.options && hashRateChart.options.scales && hashRateChart.options.scales.y && hashRateChart.options.scales.y.title) {
+            hashRateChart.options.scales.y.title.text = getHashrateUnitLabel();
+            hashRateChart.update('none');
+        }
+    }
+
+    function updateHashRateTitle(hoursWindow) {
+        const titleEl = document.getElementById('hashRateTitle');
+        if (!titleEl) return;
+        const unit = getHashrateUnitLabel();
+        const windowText = hoursWindow === 1 ? 'Last hour' : `Last ${hoursWindow} hours`;
+        titleEl.textContent = `Hash Rate (${unit}) (${windowText})`;
+    }
+
+    // Override updateAllCharts to also update titles with unit
+    const _updateAllCharts = updateAllCharts;
+    updateAllCharts = function(hoursWindow) {
+        _updateAllCharts(hoursWindow);
+        updateHashRateTitle(hoursWindow);
+    }
+
+    // Wire unit buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        const mhBtn = document.getElementById('unitMh');
+        const thBtn = document.getElementById('unitTh');
+        if (mhBtn) mhBtn.addEventListener('click', () => { setCurrentUnit('MH'); updateHashrateAxisUnit(); });
+        if (thBtn) thBtn.addEventListener('click', () => { setCurrentUnit('TH'); updateHashrateAxisUnit(); });
+        updateUnitButtons();
+    });
+
     // Main initialization
     document.addEventListener('DOMContentLoaded', function() {
         // Get the data elements with JSON contents
@@ -721,6 +857,11 @@
                     
                     // Update all charts with 24h window initially
                     updateAllCharts(24);
+                    updateHashRateTitle(24);
+
+                    // Apply initial theme to charts
+                    const isDark = (document.documentElement.getAttribute('data-theme') === 'dark');
+                    applyChartTheme(isDark);
                     
                     // Setup auto-refresh
                     setupAutoRefresh();
