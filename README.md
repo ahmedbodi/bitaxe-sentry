@@ -27,7 +27,7 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 - Find "Bitaxe Sentry" in the Umbrel App Store and install with one click.
 - All configuration is done in the app’s Settings page — no environment variables needed.
 
-## Run with Docker (Recommended)
+## Run with Docker
 
 ```bash
 # Clone the repository
