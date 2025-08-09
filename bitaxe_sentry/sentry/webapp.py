@@ -229,6 +229,31 @@ def delete_miner(
     
     return {"success": True}
 
+class RenameRequest(BaseModel):
+    name: str
+
+
+@app.post("/api/miners/{miner_id}/rename")
+def rename_miner(miner_id: int, req: RenameRequest, session: Session = Depends(get_session)):
+    """Rename a miner by updating its display name."""
+    miner = session.get(Miner, miner_id)
+    if not miner:
+        raise HTTPException(status_code=404, detail="Miner not found")
+
+    new_name = (req.name or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty")
+    if len(new_name) > 64:
+        raise HTTPException(status_code=400, detail="Name too long (max 64 chars)")
+
+    old_name = miner.name
+    miner.name = new_name
+    session.add(miner)
+    session.commit()
+
+    logger.info(f"Renamed miner ID {miner_id} from '{old_name}' to '{new_name}'")
+    return {"success": True, "id": miner_id, "name": new_name}
+
 @app.get("/settings")
 def settings_page(request: Request, success: Optional[str] = None, error: Optional[str] = None):
     """Settings page to configure the application"""

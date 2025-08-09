@@ -9,17 +9,25 @@ Bitaxe Sentry is a lightweight monitoring solution for bitaxe cryptocurrency min
 ### Features
 
 - 📊 **Metrics Tracking**: Monitors hash rate, temperature, voltage, and best difficulty
-- 🚨 **Alert System**: Discord notifications for temperature/voltage thresholds and new best difficulty records
+- 🚨 **Alert System**: Discord notifications for temperature/voltage thresholds, offline miners, and new best difficulty records
+- 🌓 **Dark Mode**: Theme toggle with persistence
+- ✏️ **Rename Miners**: Give friendly names instead of IPs
 - 📱 **Web Dashboard**: Web interface for real-time monitoring and history charts
 - 📊 **Mobile Friendly**: Responsive design works great on smartphones and tablets
 - 🔄 **Automatic History Cleanup**: Configurable data retention period
 - 🐳 **Docker Support**: Easy deployment with Docker Compose
+- 🧩 **Umbrel App Store**: Available for 1‑click install on Umbrel
 
 ## Screenshots
 
 ![Dashboard View](./public/merged_image.png)
 
-### Run with Docker (Recommended)
+## Install on Umbrel
+
+- Find "Bitaxe Sentry" in the Umbrel App Store and install with one click.
+- All configuration is done in the app’s Settings page — no environment variables needed.
+
+## Run with Docker
 
 ```bash
 # Clone the repository
@@ -46,18 +54,6 @@ git pull
 # Rebuild and start the containers
 docker compose up --build -d
 ```
-
-## Configuration
-
-### Environment Variables
-
-- `POLL_INTERVAL_MINUTES`: How often to poll miners (default: 15)
-- `RETENTION_DAYS`: How long to keep historical data (default: 30)
-- `TEMP_MIN`: Minimum acceptable temperature in °C (default: 20)
-- `TEMP_MAX`: Maximum acceptable temperature in °C (default: 70)
-- `VOLT_MIN`: Minimum acceptable volatge (default: 5)
-- `BITAXE_ENDPOINTS`: Comma-separated list of miner endpoint URLs (e.g., `http://192.168.1.233`)
-- `DISCORD_WEBHOOK_URL`: Discord webhook for notifications
 
 ## Web Dashboard
 
