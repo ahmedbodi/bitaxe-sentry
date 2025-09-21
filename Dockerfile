@@ -1,5 +1,9 @@
 FROM python:3.11-slim
 
+RUN apk add --no-cache pkgconf build-base mariadb-dev \
+  && pip install --no-cache-dir mysqlclient \
+  && apk del build-base pkgconf
+  
 # Create working directory
 WORKDIR /app
 
