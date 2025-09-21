@@ -1,10 +1,9 @@
 image:
   repository: ahmedbodi/bitaxe-sentry
-  tag: v0.4.0
+  tag: v0.4.0-81128fd
   pullPolicy: IfNotPresent
-
 env:
-  DB_URL: "sqlite:///var/lib/bitaxe/bitaxe_sentry.db"  # e.g. postgres://user:password@hostname:5432/dbname
+  DB_URL: "sqlite:///var/lib/bitaxe/bitaxe_sentry.db" # e.g. postgres://user:password@hostname:5432/dbname
   POLL_INTERVAL_MINUTES: 15
   RETENTION_DAYS: 30
   TEMP_MIN: 20
@@ -12,7 +11,6 @@ env:
   VOLT_MIN: 5.0
   BITAXE_ENDPOINTS: ""
   DISCORD_WEBHOOK_URL: ""
-
 persistence:
   enabled: true
   size: 1Gi
