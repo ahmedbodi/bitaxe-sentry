@@ -96,7 +96,7 @@ jobs:
           # Commit and push
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add ./helm/charts/gunbot
+          git add ./helm/charts/sentry
           git commit -m "Bump chart version to $NEW_VERSION, set image.tag to v${{ steps.get_version.outputs.VERSION }}"
           git push
   docker:
