@@ -74,6 +74,12 @@ jobs:
           draft: false
           prerelease: false
 
+      - name: Get Sentry version
+        id: get_sentry_version
+        run: |
+          VERSION=$(python -c "from bitaxe_sentry.sentry.version import __version__; print(__version__)")
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Increment chart version
         run: |
           # Get current chart version
@@ -91,13 +97,13 @@ jobs:
           yq e -i ".version = \"$NEW_VERSION\"" ./helm/charts/sentry/Chart.yaml
 
           # Update values.yaml
-          yq e -i ".image.tag = \"v${{ steps.get_version.outputs.VERSION }}\"" ./helm/charts/sentry/values.yaml
+          yq e -i ".image.tag = \"v${{ steps.get_sentry_version.outputs.VERSION }}\"" ./helm/charts/sentry/values.yaml
 
           # Commit and push
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add ./helm/charts/sentry
-          git commit -m "Bump chart version to $NEW_VERSION, set image.tag to v${{ steps.get_version.outputs.VERSION }}"
+          git commit -m "Bump chart version to $NEW_VERSION, set image.tag to v${{ steps.get_sentry_version.outputs.VERSION }}"
           git push
   docker:
     needs: build
