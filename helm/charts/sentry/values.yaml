@@ -4,7 +4,7 @@ image:
   pullPolicy: IfNotPresent
 
 env:
-  DB_URL: ""  # e.g. postgres://user:password@hostname:5432/dbname
+  DB_URL: "sqlite:///var/lib/bitaxe/bitaxe_sentry.db"  # e.g. postgres://user:password@hostname:5432/dbname
   POLL_INTERVAL_MINUTES: 15
   RETENTION_DAYS: 30
   TEMP_MIN: 20
