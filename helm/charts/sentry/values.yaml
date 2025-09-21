@@ -1,6 +1,6 @@
 image:
   repository: ahmedbodi/bitaxe-sentry
-  tag: v0.4.0-81128fd
+  tag: v0.4.0-f420c3e
   pullPolicy: IfNotPresent
 env:
   DB_URL: "sqlite:///var/lib/bitaxe/bitaxe_sentry.db" # e.g. postgres://user:password@hostname:5432/dbname
