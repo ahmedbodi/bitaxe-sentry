@@ -2,19 +2,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-    name: {{ include "sentry.name" . }}
-    labels:
-        {{- include "sentry.labels" . | nindent 4 }}
+  name: {{ include "sentry.name" . }}
+  labels:
+    {{- include "sentry.labels" . | nindent 4 }}
 spec:
   serviceName: {{ include "sentry.name" . }}-headless
   replicas: 1
   selector:
     matchLabels:
-        {{ include "sentry.selectorLabels" . | nindent 6 }}
+      {{- include "sentry.selectorLabels" . | nindent 8 }}
   template:
     metadata:
       labels:
-        {{ include "sentry.selectorLabels" . | nindent 8 }}
+        {{- include "sentry.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: sentry

@@ -8,7 +8,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    {{ include "sentry.selectorLabels" . | nindent 4 }}
+    {{- include "sentry.selectorLabels" . | nindent 4 }}
   ports:
     - port: 8000
       targetPort: 8000
