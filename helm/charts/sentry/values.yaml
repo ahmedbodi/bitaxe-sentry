@@ -1,0 +1,19 @@
+image:
+  repository: ahmedbodi/bitaxe-sentry
+  tag: v0.4.0
+  pullPolicy: IfNotPresent
+
+env:
+  DB_URL: ""  # e.g. postgres://user:password@hostname:5432/dbname
+  POLL_INTERVAL_MINUTES: 15
+  RETENTION_DAYS: 30
+  TEMP_MIN: 20
+  TEMP_MAX: 70
+  VOLT_MIN: 5.0
+  BITAXE_ENDPOINTS: ""
+  DISCORD_WEBHOOK_URL: ""
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
