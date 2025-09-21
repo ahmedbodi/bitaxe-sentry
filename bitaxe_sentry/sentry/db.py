@@ -42,7 +42,7 @@ class Reading(SQLModel, table=True):
 
 
 # Create SQLite engine
-engine = create_engine(DB_URL), echo=False)
+engine = create_engine(DB_URL, echo=False)
 
 
 def init_db():
