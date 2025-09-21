@@ -74,12 +74,6 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Get version
-        id: get_version
-        run: |
-          VERSION=$(python -c "from bitaxe_sentry.sentry.version import __version__; print(__version__)")
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-
       - name: Increment chart version
         run: |
           # Get current chart version
