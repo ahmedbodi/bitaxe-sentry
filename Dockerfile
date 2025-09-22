@@ -7,7 +7,7 @@ RUN apt-get update && \
   libffi-dev \
   libssl-dev \
   libpq-dev \
-  default-libmysqlclient-dev \
+  default-libmysqlclient-dev && \
   rm -rf /var/lib/apt/lists/*
 
 # Create working directory
