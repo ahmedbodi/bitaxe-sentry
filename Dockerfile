@@ -1,9 +1,15 @@
 FROM python:3.11-slim
 
-RUN apk add --no-cache pkgconf build-base mariadb-dev \
-  && pip install --no-cache-dir mysqlclient \
-  && apk del build-base pkgconf
-  
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
+  build-essential \
+  pkg-config \
+  libffi-dev \
+  libssl-dev \
+  libpq-dev \
+  default-libmysqlclient-dev \
+  rm -rf /var/lib/apt/lists/*
+
 # Create working directory
 WORKDIR /app
 
