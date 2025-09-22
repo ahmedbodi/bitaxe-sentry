@@ -15,7 +15,6 @@ persistence:
   enabled: true
   size: 1Gi
   storageClass: ""
-
 ingress:
   url: bitaxe.it4f.co.uk
   http:
@@ -28,7 +27,7 @@ ingress:
       external-dns.alpha.kubernetes.io/external: "true"
   https:
     enabled: true
-    annotations: |
+    annotations: |-
       traefik.ingress.kubernetes.io/router.entrypoints: websecure
       traefik.ingress.kubernetes.io/router.tls: "true"
       external-dns.alpha.kubernetes.io/internal: "true"
