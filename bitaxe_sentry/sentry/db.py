@@ -38,6 +38,10 @@ class Reading(SQLModel, table=True):
     temperature: float
     best_diff: str
     voltage: float = Field(default=0.0)  # Voltage in millivolts
+    stratumDiff: int = Field(default=0)
+    sharesAccepted: int = Field(default=0)
+    sharesRejected: int = Field(default=0)
+    currentStratumUrl: str = Field(default="")
     # Additional fields can be added here as needed
 
 
