@@ -28,6 +28,8 @@ spec:
           volumeMounts:
             - name: bitaxe-data
               mountPath: /var/lib/bitaxe
+          resources:
+            {{- toYaml .Values.resources.sentry | nindent 12 }}
 
         - name: web
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -45,6 +47,8 @@ spec:
           volumeMounts:
             - name: bitaxe-data
               mountPath: /var/lib/bitaxe
+          resources:
+            {{- toYaml .Values.resources.web | nindent 12 }}
   volumeClaimTemplates:
     - metadata:
         name: bitaxe-data
